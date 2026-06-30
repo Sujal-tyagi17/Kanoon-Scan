@@ -1,0 +1,29 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "cSpell.words": [
+    "Kanoon",
+    "kanoon",
+    "kanoonscan",
+    "svix",
+    "Svix",
+    "Uploadthing",
+    "uploadthing",
+    "UPLOADTHING",
+    "neondb",
+    "sslmode",
+    "whsec",
+    "cuid",
+    "Supabase",
+    "glassmorphism",
+    "Glassmorphic",
+    "Glassmorphism",
+    "rgba",
+    "csvg",
+    "openxmlformats",
+    "officedocument",
+    "wordprocessingml",
+    "Sharma",
+    "tyagi",
+    "vercel"
+  ]
+}
