@@ -5,6 +5,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import StatsCards from "@/components/dashboard/StatsCards";
 import DocumentList from "@/components/dashboard/DocumentList";
+import RiskSummaryChart from "@/components/dashboard/RiskSummaryChart";
 import { connectToDatabase } from "@/lib/db";
 import { User, Document, Analysis } from "@/types/db";
 
@@ -153,8 +154,15 @@ export default async function DashboardPage() {
           {/* Stats Grid */}
           <StatsCards stats={stats} />
 
-          {/* Recent Documents Table */}
-          <DocumentList documents={documents} />
+          {/* Bottom Grid Panel layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            <div className="lg:col-span-2">
+              <DocumentList documents={documents} />
+            </div>
+            <div>
+              <RiskSummaryChart documents={documents} />
+            </div>
+          </div>
         </div>
       </main>
     </div>

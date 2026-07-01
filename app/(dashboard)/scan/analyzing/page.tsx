@@ -92,9 +92,9 @@ export default function AnalyzingPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background overflow-y-auto">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between border-b border-outline-variant px-6 lg:px-40 py-3 bg-surface-container/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="flex items-center justify-between border-b border-outline-variant px-6 lg:px-40 py-3 bg-surface-container/80 backdrop-blur-md shrink-0 z-50">
         <Link href="/dashboard" className="flex items-center gap-3">
           <Logo />
           <h2 className="text-on-background text-lg font-bold leading-tight tracking-tight">
@@ -132,32 +132,32 @@ export default function AnalyzingPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-4xl mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-4 max-w-5xl mx-auto w-full overflow-hidden">
         {/* Animated Scanner Icon */}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 bg-primary/15 blur-3xl rounded-full scale-150 animate-pulse"></div>
-          <div className="relative flex items-center justify-center size-28 lg:size-36 rounded-full bg-surface-container border-2 border-primary/20 shadow-2xl shadow-primary/10">
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-full scale-150 animate-pulse"></div>
+          <div className="relative flex items-center justify-center size-20 lg:size-24 rounded-full bg-surface-container border-2 border-primary/20 shadow-2xl shadow-primary/10">
             {/* Orbiting ring */}
-            <div className="absolute inset-[-8px] rounded-full border-2 border-dashed border-primary/20 animate-[spin_8s_linear_infinite]"></div>
-            <div className="absolute inset-[-16px] rounded-full border border-dashed border-tertiary/10 animate-[spin_12s_linear_infinite_reverse]"></div>
-            <span className="material-symbols-outlined text-primary text-5xl lg:text-6xl select-none">
+            <div className="absolute inset-[-6px] rounded-full border-2 border-dashed border-primary/20 animate-[spin_8s_linear_infinite]"></div>
+            <div className="absolute inset-[-12px] rounded-full border border-dashed border-tertiary/10 animate-[spin_12s_linear_infinite_reverse]"></div>
+            <span className="material-symbols-outlined text-primary text-3xl lg:text-4xl select-none animate-pulse">
               policy
             </span>
           </div>
         </div>
 
         {/* Header Text */}
-        <div className="text-center mb-8">
-          <h1 className="text-on-background text-2xl lg:text-3xl font-bold tracking-tight mb-2">
+        <div className="text-center mb-6">
+          <h1 className="text-on-background text-xl lg:text-2xl font-bold tracking-tight mb-1">
             Analyzing Legal Document
           </h1>
-          <p className="text-on-surface-variant text-base">
+          <p className="text-on-surface-variant text-sm">
             Our AI is processing your file for compliance and risk factors.
           </p>
         </div>
 
         {error && (
-          <div className="w-full max-w-md mb-6 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm text-center">
+          <div className="w-full max-w-md mb-4 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm text-center shrink-0">
             <span className="material-symbols-outlined text-base mr-2 align-middle">error</span>
             {error}
             <Link href="/scan" className="block mt-2 text-primary underline text-xs">
@@ -166,88 +166,94 @@ export default function AnalyzingPage() {
           </div>
         )}
 
-        {/* Progress Checklist */}
-        <div className="w-full max-w-md space-y-3 mb-8">
-          {stepConfig.map((step, index) => {
-            const stepNum = index + 1;
-            const isDone = currentStep > stepNum || (stepNum === 1);
-            const isActive = currentStep === stepNum && stepNum !== 1;
+        {/* Side-by-Side Layout Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-stretch max-w-4xl mb-6">
+          {/* Progress Checklist */}
+          <div className="space-y-3 flex flex-col justify-center bg-surface-container/30 p-5 rounded-2xl border border-outline-variant/50">
+            <p className="text-xs font-bold text-outline uppercase tracking-wider mb-1 font-data-label">Analysis Steps</p>
+            {stepConfig.map((step, index) => {
+              const stepNum = index + 1;
+              const isDone = currentStep > stepNum || (stepNum === 1);
+              const isActive = currentStep === stepNum && stepNum !== 1;
 
-            return (
-              <div
-                key={stepNum}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-500 ${
-                  isDone
-                    ? "bg-tertiary/5 border border-tertiary/20"
-                    : isActive
-                    ? "bg-primary/10 border border-primary/30"
-                    : "bg-surface-container-low border border-outline-variant/30 opacity-40"
-                }`}
-              >
+              return (
                 <div
-                  className={`flex items-center justify-center size-7 rounded-full transition-all duration-300 ${
+                  key={stepNum}
+                  className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-500 ${
                     isDone
-                      ? "bg-tertiary text-background"
+                      ? "bg-tertiary/5 border border-tertiary/15"
                       : isActive
-                      ? "bg-primary text-background"
-                      : "bg-outline/30 text-on-surface-variant"
+                      ? "bg-primary/10 border border-primary/20"
+                      : "bg-surface-container-low border border-outline-variant/10 opacity-30"
                   }`}
                 >
-                  <span
-                    className={`material-symbols-outlined text-sm ${
-                      isActive ? "animate-spin" : isDone ? "font-bold" : ""
+                  <div
+                    className={`flex items-center justify-center size-6 rounded-full transition-all duration-300 ${
+                      isDone
+                        ? "bg-tertiary text-background"
+                        : isActive
+                        ? "bg-primary text-background"
+                        : "bg-outline/30 text-on-surface-variant"
                     }`}
                   >
-                    {isDone ? "check" : isActive ? "sync" : "hourglass_empty"}
+                    <span
+                      className={`material-symbols-outlined text-xs ${
+                        isActive ? "animate-spin" : isDone ? "font-bold" : ""
+                      }`}
+                    >
+                      {isDone ? "check" : isActive ? "sync" : "hourglass_empty"}
+                    </span>
+                  </div>
+                  <span
+                    className={`font-medium text-xs ${
+                      isDone
+                        ? "text-tertiary"
+                        : isActive
+                        ? "text-on-background font-semibold"
+                        : "text-on-surface-variant"
+                    }`}
+                  >
+                    {isDone ? step.doneLabel : step.label}
                   </span>
                 </div>
-                <span
-                  className={`font-medium text-sm ${
-                    isDone
-                      ? "text-tertiary"
-                      : isActive
-                      ? "text-on-background font-semibold"
-                      : "text-on-surface-variant"
-                  }`}
-                >
-                  {isDone ? step.doneLabel : step.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* Progress Bar Section */}
-        <div className="w-full max-w-2xl bg-surface-container p-5 rounded-2xl border border-outline-variant">
-          <div className="flex justify-between items-end mb-3">
+          {/* Progress Bar & Legal Tip */}
+          <div className="bg-surface-container p-5 rounded-2xl border border-outline-variant flex flex-col justify-between">
             <div>
-              <p className="text-primary font-bold text-sm">Scanning Progress</p>
-              <p className="text-on-surface-variant text-xs">AI analyzing document structure</p>
+              <div className="flex justify-between items-end mb-2">
+                <div>
+                  <p className="text-primary font-bold text-xs">Scanning Progress</p>
+                  <p className="text-on-surface-variant text-[10px]">AI analyzing document structure</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-primary tabular-nums">{Math.round(progress)}%</span>
+                </div>
+              </div>
+              <div className="w-full h-2.5 bg-surface-container-low rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-tertiary rounded-full shadow-[0_0_15px_rgba(255,200,128,0.4)] transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="text-right">
-              <span className="text-2xl font-bold text-primary tabular-nums">{Math.round(progress)}%</span>
-            </div>
-          </div>
-          <div className="w-full h-2.5 bg-surface-container-low rounded-full overflow-hidden mb-4">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-tertiary rounded-full shadow-[0_0_15px_rgba(255,200,128,0.4)] transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
 
-          {/* Legal Tip */}
-          <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-xl border-l-4 border-primary">
-            <span className="material-symbols-outlined text-primary text-base mt-0.5">lightbulb</span>
-            <p className="text-on-surface-variant text-xs leading-relaxed italic">
-              <span className="font-semibold not-italic text-on-surface">Legal Tip:</span> {legalTip}
-            </p>
+            {/* Legal Tip */}
+            <div className="flex items-start gap-2.5 p-3 bg-primary/5 rounded-xl border-l-4 border-primary">
+              <span className="material-symbols-outlined text-primary text-sm mt-0.5">lightbulb</span>
+              <p className="text-on-surface-variant text-[11px] leading-relaxed italic">
+                <span className="font-semibold not-italic text-on-surface">Legal Tip:</span> {legalTip}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Security Badge */}
-        <div className="mt-6 flex items-center gap-2 text-on-surface-variant/50">
+        <div className="flex items-center gap-2 text-on-surface-variant/45 shrink-0">
           <span className="material-symbols-outlined text-xs">lock</span>
-          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold">
+          <p className="text-[9px] uppercase tracking-[0.15em] font-semibold">
             AES-256 Encrypted · Zero-Knowledge Processing
           </p>
         </div>

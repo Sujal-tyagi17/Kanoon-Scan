@@ -339,7 +339,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
   return (
     <div className="min-h-screen flex flex-col bg-background text-on-background">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-outline-variant px-8 py-3 bg-background sticky top-0 z-50">
+      <header className="flex items-center justify-between border-b border-outline-variant px-8 py-3 bg-background sticky top-0 z-50 relative">
         <div className="flex items-center gap-4">
           <Logo className="w-8 h-8" />
           <div>
@@ -354,22 +354,25 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
             </div>
           </div>
         </div>
+
+        {/* Centered Navigation */}
+        <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="text-on-surface-variant hover:text-primary text-sm font-semibold transition-colors"
+          >
+            Dashboard
+          </Link>
+          <span className="text-primary text-sm font-semibold">Analysis Workbench</span>
+          <Link
+            href="/vault"
+            className="text-on-surface-variant hover:text-primary text-sm font-semibold transition-colors"
+          >
+            Document Vault
+          </Link>
+        </nav>
+
         <div className="flex items-center gap-4">
-          <nav className="hidden md:flex items-center gap-6 mr-4 border-r border-outline-variant pr-6">
-            <Link
-              href="/dashboard"
-              className="text-on-surface-variant hover:text-primary text-sm font-semibold transition-colors"
-            >
-              Dashboard
-            </Link>
-            <span className="text-primary text-sm font-semibold">Analysis Workbench</span>
-            <Link
-              href="/vault"
-              className="text-on-surface-variant hover:text-primary text-sm font-semibold transition-colors"
-            >
-              Document Vault
-            </Link>
-          </nav>
           <div className="flex gap-2 relative">
             <button
               onClick={handleShare}
