@@ -15,7 +15,7 @@ const StatCard = ({ label, icon, value, trend }: StatCardProps) => (
       <span className="material-symbols-outlined text-primary">{icon}</span>
     </div>
     <div className="flex items-end justify-between">
-      <span className="text-3xl font-headline-lg text-on-surface mt-1">{value}</span>
+      <span className="text-3xl font-semibold tracking-tight text-on-surface mt-1">{value}</span>
       <span
         className={`text-xs font-bold flex items-center gap-0.5 ${
           trend.isPositive ? "text-tertiary" : "text-destructive"

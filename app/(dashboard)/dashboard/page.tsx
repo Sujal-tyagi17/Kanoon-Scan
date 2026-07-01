@@ -135,15 +135,15 @@ export default async function DashboardPage() {
           {/* Welcome Section */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-headline-xl text-on-background mb-1">
+              <h2 className="text-3xl font-headline-md text-on-background mb-1">
                 Welcome back, {firstName}
               </h2>
-              <p className="text-on-surface-variant font-body-md">
-                Here's an overview of your institutional document analysis pipeline.
+              <p className="text-on-surface-variant text-sm font-medium">
+                Here's an overview of your secure document analysis pipeline.
               </p>
             </div>
             <Link href="/scan">
-              <button className="flex items-center gap-2 px-6 py-2.5 bg-primary-container text-white font-semibold rounded-lg hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] active:scale-95 transition-all">
+              <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary-container to-primary text-[#452b00] font-bold text-sm rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all shadow-lg">
                 <span className="material-symbols-outlined">upload_file</span>
                 <span>New Scan</span>
               </button>
