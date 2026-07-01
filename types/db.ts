@@ -28,6 +28,10 @@ export interface Analysis {
   summary: string;
   plainEnglish: string;
   createdAt: Date;
+  overallVerdict?: { status: string; explanation: string } | null;
+  positiveClauses?: string[];
+  keyInformation?: Record<string, string>;
+  confidenceScore?: string | null;
 }
 
 export interface Clause {
@@ -44,6 +48,9 @@ export interface Clause {
   category: string;
   position: number;
   isSaved: boolean;
+  whoBenefits?: string;
+  whoIsAtRisk?: string;
+  severity?: string;
 }
 
 export interface RiskCategory {

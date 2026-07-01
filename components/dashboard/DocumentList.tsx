@@ -4,7 +4,7 @@ interface DocumentItem {
   id: string;
   name: string;
   dateAnalyzed: string;
-  riskLevel: "HIGH" | "MEDIUM" | "LOW";
+  riskLevel: string; // Allow "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
   status: "Completed" | "Processing";
   icon: string;
 }
@@ -13,14 +13,18 @@ interface DocumentListProps {
   documents: DocumentItem[];
 }
 
-const getRiskBadgeClass = (risk: "HIGH" | "MEDIUM" | "LOW") => {
+const getRiskBadgeClass = (risk: string) => {
   switch (risk) {
+    case "CRITICAL":
+      return "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30";
     case "HIGH":
-      return "bg-[#ffb4ab]/15 text-[#ffb4ab] border border-[#ffb4ab]/30";
+      return "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30";
     case "MEDIUM":
-      return "bg-[#f5a623]/15 text-[#f5a623] border border-[#f5a623]/30";
+      return "bg-[#FACC15]/15 text-[#FACC15] border border-[#FACC15]/30";
     case "LOW":
-      return "bg-[#d6b400]/15 text-[#d6b400] border border-[#d6b400]/30";
+      return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
+    default:
+      return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
   }
 };
 

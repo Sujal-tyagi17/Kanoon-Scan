@@ -5,11 +5,25 @@ import { encryptText } from "@/lib/encryption";
 import { logAuditEvent } from "@/lib/db/audit";
 import { User, Document } from "@/types/db";
 import { ObjectId } from "mongodb";
-import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// Configure local execution configurations for pdfjs-dist
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { pathToFileURL } from "url";
+
+// Bind the legacy CJS worker directly to pdfjsLib instance to resolve Node.js mock tasks
+if (typeof window === "undefined") {
+  const absolutePath = require("path").join(
+    process.cwd(),
+    "node_modules",
+    "pdfjs-dist",
+    "legacy",
+    "build",
+    "pdf.worker.mjs"
+  );
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(absolutePath).toString();
+} else {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+}
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {

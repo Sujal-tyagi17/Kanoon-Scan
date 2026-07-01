@@ -58,7 +58,7 @@ export default async function VaultPage() {
         day: "numeric", 
         year: "numeric" 
       }),
-      riskLevel: (docAnalysis?.riskLevel?.toUpperCase() || "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+      riskLevel: (docAnalysis?.riskLevel?.toUpperCase() || "MEDIUM"),
       status: (doc.status === "complete" ? "Completed" : "Processing") as "Completed" | "Processing",
       icon: "article",
     });

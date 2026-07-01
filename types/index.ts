@@ -60,8 +60,12 @@ export interface GeminiAnalysisResponse {
   riskScore: number;
   riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   summary: string;
-  plainEnglish: string[];
+  plainEnglish: string | string[];
   aiRecommendation: string;
   categories: CategoryType[];
   clauses: Omit<ClauseType, "id" | "isSaved">[];
+  overallVerdict?: { status: string; explanation: string } | null;
+  positiveClauses?: string[];
+  keyInformation?: Record<string, string>;
+  confidenceScore?: string | null;
 }

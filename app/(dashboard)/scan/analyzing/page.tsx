@@ -27,7 +27,7 @@ export default function AnalyzingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId");
-  
+
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function AnalyzingPage() {
     const analyzeDocument = async () => {
       try {
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for UI to show progress
-        
+
         const response = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -64,10 +64,10 @@ export default function AnalyzingPage() {
         }
 
         const { analysisId } = await response.json();
-        
+
         // Animate to 100%
         setProgress(100);
-        
+
         // Redirect directly to the analysis report after a brief moment
         setTimeout(() => {
           router.push(`/analysis/${analysisId}`);
@@ -179,39 +179,35 @@ export default function AnalyzingPage() {
               return (
                 <div
                   key={stepNum}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-500 ${
-                    isDone
+                  className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-500 ${isDone
                       ? "bg-tertiary/5 border border-tertiary/15"
                       : isActive
-                      ? "bg-primary/10 border border-primary/20"
-                      : "bg-surface-container-low border border-outline-variant/10 opacity-30"
-                  }`}
+                        ? "bg-primary/10 border border-primary/20"
+                        : "bg-surface-container-low border border-outline-variant/10 opacity-30"
+                    }`}
                 >
                   <div
-                    className={`flex items-center justify-center size-6 rounded-full transition-all duration-300 ${
-                      isDone
+                    className={`flex items-center justify-center size-6 rounded-full transition-all duration-300 ${isDone
                         ? "bg-tertiary text-background"
                         : isActive
-                        ? "bg-primary text-background"
-                        : "bg-outline/30 text-on-surface-variant"
-                    }`}
+                          ? "bg-primary text-background"
+                          : "bg-outline/30 text-on-surface-variant"
+                      }`}
                   >
                     <span
-                      className={`material-symbols-outlined text-xs ${
-                        isActive ? "animate-spin" : isDone ? "font-bold" : ""
-                      }`}
+                      className={`material-symbols-outlined text-xs ${isActive ? "animate-spin" : isDone ? "font-bold" : ""
+                        }`}
                     >
                       {isDone ? "check" : isActive ? "sync" : "hourglass_empty"}
                     </span>
                   </div>
                   <span
-                    className={`font-medium text-xs ${
-                      isDone
+                    className={`font-medium text-xs ${isDone
                         ? "text-tertiary"
                         : isActive
-                        ? "text-on-background font-semibold"
-                        : "text-on-surface-variant"
-                    }`}
+                          ? "text-on-background font-semibold"
+                          : "text-on-surface-variant"
+                      }`}
                   >
                     {isDone ? step.doneLabel : step.label}
                   </span>

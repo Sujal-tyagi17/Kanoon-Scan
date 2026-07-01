@@ -89,6 +89,11 @@ export async function POST(req: NextRequest) {
         summary: analysisResult.summary || 'Summary unavailable.',
         plainEnglish: plainEnglishText || 'Plain English explanation unavailable.',
         createdAt: new Date(),
+        // New Extended Legal AI fields (Feature 1, 2, 3, 4) saved backward-compatibly
+        overallVerdict: analysisResult.overallVerdict || null,
+        positiveClauses: Array.isArray(analysisResult.positiveClauses) ? analysisResult.positiveClauses : [],
+        keyInformation: analysisResult.keyInformation || {},
+        confidenceScore: analysisResult.confidenceScore || null,
       });
       analysisId = analysisInsertResult.insertedId.toString();
     } catch (insertError: any) {
@@ -119,6 +124,10 @@ export async function POST(req: NextRequest) {
         category: String(clause.category || "General").substring(0, 100),
         position: index,
         isSaved: false,
+        // Expanded legal intelligence attributes (Feature 12)
+        whoBenefits: String(clause.whoBenefits || "Not specified in the agreement.").substring(0, 100),
+        whoIsAtRisk: String(clause.whoIsAtRisk || "Not specified in the agreement.").substring(0, 100),
+        severity: String(clause.severity || clause.riskLevel || "MEDIUM").substring(0, 50),
       }));
       await clauses.insertMany(clausesData);
     }

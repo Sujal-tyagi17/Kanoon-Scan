@@ -10,6 +10,10 @@ type AnalysisWithRelations = Analysis & {
   document: Document;
   clauses: Clause[];
   categories: RiskCategory[];
+  overallVerdict?: { status: string; explanation: string } | null;
+  positiveClauses?: string[];
+  keyInformation?: Record<string, string>;
+  confidenceScore?: string | null;
 };
 
 export default function AnalysisReportClient({ analysisData }: { analysisData: AnalysisWithRelations }) {
@@ -134,32 +138,60 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
   // Export Report handler
   const handleExportReport = () => {
     const riskColor = (level: string) => {
-      if (level === "CRITICAL" || level === "HIGH") return "#ff4444";
-      if (level === "MEDIUM") return "#ff9900";
-      return "#22c55e";
+      if (level === "CRITICAL") return "#EF4444";
+      if (level === "HIGH") return "#F97316";
+      if (level === "MEDIUM") return "#FACC15";
+      return "#22C55E";
     };
 
-    const clauseRows = clauses.map((c, i) => `
-      <tr>
-        <td style="padding:10px;border-bottom:1px solid #eee;">${i + 1}</td>
-        <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;">${c.title}</td>
-        <td style="padding:10px;border-bottom:1px solid #eee;">
-          <span style="background:${riskColor(c.riskLevel)};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${c.riskLevel}</span>
-        </td>
-        <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${c.explanation || ""}</td>
-        <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;font-style:italic;color:#555;">${c.suggestion || "—"}</td>
-      </tr>
-    `).join("");
+    const clauseRows = clauses.map((c, i) => {
+      const textColor = c.riskLevel === "MEDIUM" ? "#3f2b00" : "#ffffff";
+      return `
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #eee;">${i + 1}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;">${c.title}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;">
+            <span style="background:${riskColor(c.riskLevel)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${c.riskLevel}</span>
+          </td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${c.explanation || ""}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;font-style:italic;color:#555;">${c.suggestion || "—"}</td>
+        </tr>
+      `;
+    }).join("");
 
-    const categoryRows = categories.map(cat => `
-      <tr>
-        <td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;">${cat.name}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">
-          <span style="background:${riskColor(cat.level)};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${cat.level}</span>
-        </td>
-        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">${cat.score}/100</td>
-      </tr>
-    `).join("");
+    const categoryRows = categories.map(cat => {
+      const textColor = cat.level === "MEDIUM" ? "#3f2b00" : "#ffffff";
+      return `
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;">${cat.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">
+            <span style="background:${riskColor(cat.level)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${cat.level}</span>
+          </td>
+          <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">${cat.score}/100</td>
+        </tr>
+      `;
+    }).join("");
+
+    const positiveClausesRows = (analysisData.positiveClauses && analysisData.positiveClauses.length > 0)
+      ? analysisData.positiveClauses.map((c: string) => `
+        <li style="margin-bottom:6px;font-size:13px;color:#334155;">✔ ${c}</li>
+      `).join("")
+      : `<p style="font-size:13px;color:#64748b;font-style:italic;">No significant protective clauses detected.</p>`;
+
+    const keyInformationRows = (analysisData.keyInformation && Object.keys(analysisData.keyInformation).length > 0)
+      ? Object.entries(analysisData.keyInformation).map(([key, val]: any) => `
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600;font-size:12px;color:#475569;">${key}</td>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${val || "Not specified"}</td>
+        </tr>
+      `).join("")
+      : "";
+
+    const finalScoreColor = analysisData.riskScore > 75 ? '#EF4444' :
+                            analysisData.riskScore > 50 ? '#F97316' :
+                            analysisData.riskScore > 25 ? '#FACC15' :
+                            '#22C55E';
+    const finalScoreTextColor = (analysisData.riskScore > 25 && analysisData.riskScore <= 50) ? '#3f2b00' : '#ffffff';
 
     const html = `<!DOCTYPE html>
 <html>
@@ -168,19 +200,19 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
   <title>KanoonScan Analysis Report - ${document.name}</title>
   <style>
     body { font-family: 'Segoe UI', system-ui, sans-serif; margin:0; padding:40px; color:#1a1a2e; background:#fff; }
-    .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #f5a623; padding-bottom:20px; margin-bottom:30px; }
-    .logo { font-size:24px; font-weight:800; color:#f5a623; }
+    .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #b89855; padding-bottom:20px; margin-bottom:30px; }
+    .logo { font-size:24px; font-weight:800; color:#b89855; }
     .meta { text-align:right; font-size:12px; color:#666; }
-    .risk-badge { display:inline-block; padding:6px 16px; border-radius:8px; font-weight:800; font-size:18px; color:#fff; }
-    .risk-high { background:#ffb4ab; color:#690005; }
-    .risk-medium { background:#f5a623; color:#472a00; }
-    .risk-low { background:#d6b400; color:#221b00; }
-    h2 { color:#f5a623; border-bottom:1px solid #e5e7eb; padding-bottom:8px; margin-top:30px; }
+    .risk-badge { display:inline-block; padding:6px 16px; border-radius:8px; font-weight:800; font-size:18px; }
+    h2 { color:#b89855; border-bottom:1px solid #e5e7eb; padding-bottom:8px; margin-top:30px; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
     th { background:#f1f5f9; padding:10px; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:#475569; border-bottom:2px solid #e2e8f0; }
     .summary-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin:15px 0; line-height:1.7; }
     .footer { margin-top:40px; padding-top:15px; border-top:2px solid #e5e7eb; font-size:11px; color:#999; text-align:center; }
-    @media print { body { padding:20px; } }
+    @media print { 
+      body { padding:20px; } 
+      .page-break { page-break-before: always; }
+    }
   </style>
 </head>
 <body>
@@ -192,14 +224,49 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
     <div class="meta">
       <div><strong>Document:</strong> ${document.name}</div>
       <div><strong>Analyzed:</strong> ${new Date(analysisData.createdAt).toLocaleDateString("en-IN", { year:"numeric", month:"long", day:"numeric" })}</div>
-      <div style="margin-top:8px;"><span class="risk-badge ${analysisData.riskScore > 70 ? 'risk-high' : analysisData.riskScore > 40 ? 'risk-medium' : 'risk-low'}">Risk Score: ${analysisData.riskScore}/100</span></div>
+      ${analysisData.confidenceScore ? `<div><strong>AI Confidence:</strong> ${analysisData.confidenceScore}</div>` : ""}
+      <div style="margin-top:8px;"><span class="risk-badge" style="background:${finalScoreColor};color:${finalScoreTextColor};">Risk Score: ${analysisData.riskScore}/100</span></div>
     </div>
   </div>
 
   <h2>Executive Summary</h2>
   <div class="summary-box">${analysisData.summary}</div>
 
+  ${analysisData.overallVerdict ? `
+    <h2>Overall Verdict</h2>
+    <div class="summary-box" style="border-left: 4px solid ${finalScoreColor};">
+      <div style="font-weight: 800; font-size: 16px; margin-bottom: 8px;">${analysisData.overallVerdict.status}</div>
+      <div style="font-size: 14px; color: #334155;">${analysisData.overallVerdict.explanation}</div>
+    </div>
+  ` : ""}
+
   ${analysisData.plainEnglish ? `<h2>Plain English Translation</h2><div class="summary-box">${analysisData.plainEnglish}</div>` : ""}
+
+  ${positiveClausesRows ? `
+    <h2>Positive Clauses</h2>
+    <div class="summary-box">
+      <ul style="margin: 0; padding-left: 20px;">
+        ${positiveClausesRows}
+      </ul>
+    </div>
+  ` : ""}
+
+  ${keyInformationRows ? `
+    <h2>Key Contract Information</h2>
+    <table style="margin-bottom: 30px;">
+      <thead>
+        <tr>
+          <th style="padding:8px;text-align:left;">Field</th>
+          <th style="padding:8px;text-align:left;">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${keyInformationRows}
+      </tbody>
+    </table>
+  ` : ""}
+
+  <div class="page-break"></div>
 
   <h2>Risk Categories</h2>
   <table>
@@ -214,7 +281,8 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
   </table>
 
   <div class="footer">
-    <p>Generated by KanoonScan &mdash; AI Legal Document Scanner &mdash; ${new Date().toISOString()}</p>
+    <p>Generated by KanoonScan &mdash; AI Legal Document Scanner &mdash; ${new Date().toLocaleString("en-IN")}</p>
+    <p>Page 1 of 1</p>
     <p>This report is for informational purposes only and does not constitute legal advice.</p>
   </div>
 </body>
@@ -418,7 +486,16 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-on-surface-variant uppercase">Risk Score</span>
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-white font-bold text-sm shadow-lg ${analysisData.riskScore > 70 ? 'bg-error-container border border-error/20' : 'bg-primary-container border border-primary/20'}`}>
+            <div 
+              style={{
+                backgroundColor: analysisData.riskScore > 75 ? '#EF4444' :
+                                 analysisData.riskScore > 50 ? '#F97316' :
+                                 analysisData.riskScore > 25 ? '#FACC15' :
+                                 '#22C55E',
+                color: (analysisData.riskScore > 25 && analysisData.riskScore <= 50) ? '#3f2b00' : '#ffffff'
+              }}
+              className="flex items-center gap-2 px-3 py-1 rounded-full font-bold text-sm shadow-lg"
+            >
               {analysisData.riskScore}/100
             </div>
           </div>
@@ -476,7 +553,13 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                   strokeWidth="6"
                 ></circle>
                 <circle
-                  className={`stroke-current ${analysisData.riskScore > 70 ? 'text-error' : analysisData.riskScore > 40 ? 'text-primary' : 'text-tertiary'}`}
+                  style={{
+                    color: analysisData.riskScore > 75 ? '#EF4444' :
+                           analysisData.riskScore > 50 ? '#F97316' :
+                           analysisData.riskScore > 25 ? '#FACC15' :
+                           '#22C55E'
+                  }}
+                  className="stroke-current"
                   cx="50"
                   cy="50"
                   fill="transparent"
@@ -489,7 +572,15 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                 ></circle>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-4xl font-headline-xl ${analysisData.riskScore > 70 ? 'text-error' : 'text-primary'}`}>
+                <span 
+                  style={{
+                    color: analysisData.riskScore > 75 ? '#EF4444' :
+                           analysisData.riskScore > 50 ? '#F97316' :
+                           analysisData.riskScore > 25 ? '#FACC15' :
+                           '#22C55E'
+                  }}
+                  className="text-4xl font-headline-xl"
+                >
                   {analysisData.riskScore}
                 </span>
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-data-label">
@@ -497,33 +588,39 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                 </span>
               </div>
             </div>
+
+            {/* Feature 4: AI Confidence Score Display */}
+            {analysisData.confidenceScore && (
+              <div className="mb-8 p-3 bg-surface-container/50 border border-outline-variant/30 rounded-lg text-center">
+                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest font-data-label mb-0.5">AI Analysis Confidence</p>
+                <p className="text-xl font-bold text-primary">{analysisData.confidenceScore}</p>
+              </div>
+            )}
             
             {/* dynamic Categories */}
             <div className="space-y-6">
-              {categories.map((category) => (
-                <div key={category.id}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-semibold text-on-surface-variant">{category.name}</span>
-                    <span className={`text-xs font-bold font-data-label ${
-                      category.level === "HIGH" || category.level === "CRITICAL" ? "text-error" :
-                      category.level === "MEDIUM" ? "text-primary" :
-                      "text-tertiary"
-                    }`}>
-                      {category.level}
-                    </span>
+              {categories.map((category) => {
+                const catColor = category.level === "CRITICAL" ? "#EF4444" :
+                                 category.level === "HIGH" ? "#F97316" :
+                                 category.level === "MEDIUM" ? "#FACC15" :
+                                 "#22C55E";
+                return (
+                  <div key={category.id}>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-xs font-semibold text-on-surface-variant">{category.name}</span>
+                      <span style={{ color: catColor }} className="text-xs font-bold font-data-label">
+                        {category.level}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-[#2d3449] rounded-full overflow-hidden">
+                      <div 
+                        style={{ width: `${category.score}%`, backgroundColor: catColor }}
+                        className="h-full transition-all"
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-1.5 w-full bg-[#2d3449] rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${
-                        category.level === "HIGH" || category.level === "CRITICAL" ? "bg-error" :
-                        category.level === "MEDIUM" ? "bg-primary" :
-                        "bg-tertiary"
-                      }`}
-                      style={{ width: `${category.score}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-10 p-4 bg-primary-container/10 rounded-xl border border-primary/20">
@@ -534,7 +631,13 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                     AI Recommendation
                   </p>
                   <p className="text-xs leading-relaxed text-on-surface-variant">
-                     Review the clauses highlighted in the "High Risk" tab. Consider requesting revisions for any terms scoring high liability.
+                    {analysisData.riskScore < 30
+                      ? "This agreement appears balanced with only minor legal concerns."
+                      : analysisData.riskScore <= 60
+                      ? "Review the medium-risk clauses before signing."
+                      : analysisData.riskScore <= 80
+                      ? "Consider obtaining legal advice."
+                      : "Independent legal review is strongly recommended."}
                   </p>
                 </div>
               </div>
@@ -561,9 +664,10 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                   onClick={() => setActiveTab("high")}
                   className={`text-sm pb-1 whitespace-nowrap transition-colors ${
                     activeTab === "high"
-                      ? "font-bold border-b-2 border-primary text-on-surface"
+                      ? "font-bold border-b-2 text-on-surface"
                       : "font-semibold text-on-surface-variant hover:text-on-surface"
                   }`}
+                  style={activeTab === "high" ? { borderBottomColor: "#F97316" } : undefined}
                 >
                   High Risk ({highRiskCount})
                 </button>
@@ -604,11 +708,71 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
           <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
             
             {activeTab === "plain" ? (
-              <div className="p-6 bg-surface-container border border-outline-variant rounded-xl">
-                 <h3 className="text-md font-bold text-on-surface mb-4">Plain English Summary</h3>
-                 <div className="text-on-surface-variant text-sm leading-relaxed whitespace-pre-wrap font-legal-text">
+              <div className="space-y-6">
+                {/* Feature 1: Overall Verdict */}
+                {analysisData.overallVerdict && (
+                  <div className="p-6 bg-surface-container border border-outline-variant rounded-xl">
+                    <h3 className="text-xs font-bold text-outline uppercase tracking-wider mb-2 font-data-label">Overall Verdict</h3>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-md font-extrabold text-on-surface">
+                        {analysisData.overallVerdict.status}
+                      </span>
+                      <p className="text-sm text-on-surface-variant leading-relaxed">
+                        {analysisData.overallVerdict.explanation}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Plain English Summary */}
+                <div className="p-6 bg-surface-container border border-outline-variant rounded-xl">
+                  <h3 className="text-xs font-bold text-outline uppercase tracking-wider mb-4 font-data-label">Plain English Summary</h3>
+                  <div className="text-on-surface-variant text-sm leading-relaxed whitespace-pre-wrap font-legal-text">
                     {analysisData.plainEnglish}
-                 </div>
+                  </div>
+                </div>
+
+                {/* Feature 2: Positive Clauses */}
+                <div className="p-6 bg-surface-container border border-outline-variant rounded-xl">
+                  <h3 className="text-xs font-bold text-outline uppercase tracking-wider mb-4 font-data-label">Positive Clauses</h3>
+                  {analysisData.positiveClauses && analysisData.positiveClauses.length > 0 ? (
+                    <ul className="space-y-2.5">
+                      {analysisData.positiveClauses.map((clauseStr: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2.5 text-sm text-on-surface-variant">
+                          <span className="material-symbols-outlined text-tertiary text-sm mt-0.5 select-none">check_circle</span>
+                          <span>{clauseStr}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-outline italic">No significant protective clauses detected.</p>
+                  )}
+                </div>
+
+                {/* Feature 3: Key Contract Information */}
+                {analysisData.keyInformation && Object.keys(analysisData.keyInformation).length > 0 && (
+                  <div className="p-6 bg-surface-container border border-outline-variant rounded-xl">
+                    <h3 className="text-xs font-bold text-outline uppercase tracking-wider mb-4 font-data-label">Key Contract Information</h3>
+                    <div className="overflow-hidden border border-outline-variant/35 rounded-lg">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead>
+                          <tr className="bg-surface-container-low border-b border-outline-variant/50">
+                            <th className="p-3 font-semibold text-outline text-xs uppercase tracking-wider">Field</th>
+                            <th className="p-3 font-semibold text-outline text-xs uppercase tracking-wider">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-outline-variant/25">
+                          {Object.entries(analysisData.keyInformation).map(([key, val]: any) => (
+                            <tr key={key} className="hover:bg-surface-container-high/30 transition-colors">
+                              <td className="p-3 font-medium text-on-surface-variant">{key}</td>
+                              <td className="p-3 text-on-surface">{val || "Not specified in the agreement."}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : filteredClauses.length === 0 ? (
                <div className="flex flex-col items-center justify-center p-12 text-on-surface-variant">
@@ -620,23 +784,23 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
               const _isHigh = clause.riskLevel === "HIGH";
               const _isMedium = clause.riskLevel === "MEDIUM";
 
+              // Define dynamic theme colors
+              const themeColor = _isCritical ? "#EF4444" :
+                                 _isHigh ? "#F97316" :
+                                 _isMedium ? "#FACC15" :
+                                 "#22C55E";
+
+              // WCAG text color selection for background chips
+              const textColor = _isMedium ? "#3f2b00" : "#ffffff";
+
               return (
-                <div key={clause.id} className={`bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all hover:border-primary/30 ${
-                    _isCritical || _isHigh ? "legal-card-border-risk" : 
-                    _isMedium ? "legal-card-border-caution" : 
-                    "legal-card-border-verified"
-                 }`}>
-                  <div className={`p-4 border-b border-outline-variant/30 flex justify-between items-center ${
-                    _isCritical || _isHigh ? "bg-error-container/5" : 
-                    _isMedium ? "bg-primary-container/5" : 
-                    "bg-tertiary/5"
-                  }`}>
+                <div key={clause.id} className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all hover:border-primary/30"
+                     style={{
+                       borderLeft: `4px solid ${themeColor}`
+                     }}>
+                  <div className="p-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/20">
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-data-label uppercase ${
-                        _isCritical || _isHigh ? "bg-error text-[#690005]" : 
-                        _isMedium ? "bg-primary text-[#002a78]" : 
-                        "bg-tertiary text-[#003824]"
-                      }`}>
+                      <span style={{ backgroundColor: themeColor, color: textColor }} className="px-2 py-0.5 rounded text-[10px] font-bold font-data-label uppercase">
                         {clause.riskLevel}
                       </span>
                       <h4 className="text-sm font-bold text-on-surface">
@@ -690,6 +854,34 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                         </p>
                       </div>
                     )}
+
+                    {/* Feature 12 dynamic additions */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-outline-variant/20">
+                      <div>
+                        <p className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 font-data-label">
+                          Who Benefits
+                        </p>
+                        <p className="text-xs text-on-surface font-medium">
+                          {(clause as any).whoBenefits || "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 font-data-label">
+                          Who Is At Risk
+                        </p>
+                        <p className="text-xs text-on-surface font-medium">
+                          {(clause as any).whoIsAtRisk || "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest mb-1 font-data-label">
+                          Severity
+                        </p>
+                        <p className="text-xs text-on-surface font-medium uppercase">
+                          {(clause as any).severity || clause.riskLevel}
+                        </p>
+                      </div>
+                    </div>
 
                     {/* Draft panel */}
                     {draftClauseId === (clause.id || clause._id) && (draftLoading || draftText) && (

@@ -7,7 +7,7 @@ interface VaultDocument {
   id: string;
   name: string;
   dateAnalyzed: string;
-  riskLevel: "HIGH" | "MEDIUM" | "LOW";
+  riskLevel: string; // Allow "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
   status: "Completed" | "Processing";
   icon: string;
 }
@@ -22,14 +22,18 @@ export default function VaultClient({ initialDocuments }: VaultClientProps) {
   const [selectedType, setSelectedType] = useState("All Files");
   const [sortBy, setSortBy] = useState("Date Added");
 
-  const getRiskBadgeClass = (risk: "HIGH" | "MEDIUM" | "LOW") => {
+  const getRiskBadgeClass = (risk: string) => {
     switch (risk) {
+      case "CRITICAL":
+        return "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30";
       case "HIGH":
-        return "bg-[#ffb4ab]/15 text-[#ffb4ab] border border-[#ffb4ab]/30";
+        return "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30";
       case "MEDIUM":
-        return "bg-[#f5a623]/15 text-[#f5a623] border border-[#f5a623]/30";
+        return "bg-[#FACC15]/15 text-[#FACC15] border border-[#FACC15]/30";
       case "LOW":
-        return "bg-[#d6b400]/15 text-[#d6b400] border border-[#d6b400]/30";
+        return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
+      default:
+        return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
     }
   };
 
@@ -77,8 +81,8 @@ export default function VaultClient({ initialDocuments }: VaultClientProps) {
       return a.name.localeCompare(b.name);
     }
     if (sortBy === "Risk Level") {
-      const riskVal = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-      return riskVal[b.riskLevel] - riskVal[a.riskLevel];
+      const riskVal: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+      return (riskVal[b.riskLevel] || 0) - (riskVal[a.riskLevel] || 0);
     }
     // Default: Date Added (descending by sorting initial db index order or ID comparisons)
     return 0; // Preserve default descending DB fetch order

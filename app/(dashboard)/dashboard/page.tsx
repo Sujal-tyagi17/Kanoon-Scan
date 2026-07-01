@@ -63,7 +63,7 @@ export default async function DashboardPage() {
         day: "numeric", 
         year: "numeric" 
       }),
-      riskLevel: (docAnalysis?.riskLevel?.toUpperCase() || "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+      riskLevel: (docAnalysis?.riskLevel?.toUpperCase() || "MEDIUM"),
       status: (doc.status === "complete" ? "Completed" : "Processing") as "Completed" | "Processing",
       icon: "article",
     });
@@ -121,6 +121,11 @@ export default async function DashboardPage() {
     },
   ];
 
+  // Prepare all user document risk levels for the RiskSummaryChart
+  const allAnalysesMetrics = userAnalyses.map(a => ({
+    riskLevel: (a.riskLevel || "MEDIUM").toUpperCase()
+  }));
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
@@ -160,7 +165,7 @@ export default async function DashboardPage() {
               <DocumentList documents={documents} />
             </div>
             <div>
-              <RiskSummaryChart documents={documents} />
+              <RiskSummaryChart documents={allAnalysesMetrics} />
             </div>
           </div>
         </div>

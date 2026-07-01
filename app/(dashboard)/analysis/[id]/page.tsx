@@ -81,6 +81,10 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
     category: c.category,
     position: c.position,
     isSaved: c.isSaved,
+    // Dynamic fields (Feature 12)
+    whoBenefits: (c as any).whoBenefits || "Not specified in the agreement.",
+    whoIsAtRisk: (c as any).whoIsAtRisk || "Not specified in the agreement.",
+    severity: (c as any).severity || c.riskLevel || "MEDIUM",
   }));
 
   const categories = await riskCategoriesCol.find({ analysisId }).toArray();
@@ -103,6 +107,11 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
     document: formattedDoc,
     clauses: formattedClauses,
     categories: formattedCategories,
+    // Features 1, 2, 3, 4 loader mappings (backward compatible with fallback defaults)
+    overallVerdict: (analysis as any).overallVerdict || null,
+    positiveClauses: Array.isArray((analysis as any).positiveClauses) ? (analysis as any).positiveClauses : [],
+    keyInformation: (analysis as any).keyInformation || {},
+    confidenceScore: (analysis as any).confidenceScore || null,
   };
 
   return <AnalysisReportClient analysisData={analysisData} />;
