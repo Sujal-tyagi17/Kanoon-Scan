@@ -9,24 +9,24 @@ An AI-powered Legal Contract Analyzer that helps users understand legal agreemen
 ## 📸 Screenshots
 ### Landing Page
 
-![Landing Page](./screenshots/landing.png)
+![Landing Page](public\screenshots\landing.png)
 
 ---
 ### Dashboard
 
-![Dashboard](./screenshots/dashboard.png)
+![Dashboard](public\screenshots\dashboard.png)
 
 ---
 
 ### Contract Analysis
 
-![Analysis](./screenshots/analysis.png)
+![Analysis](public\screenshots\analysis.png)
 
 ---
 
 ### Document Vault
 
-![Document Vault](./screenshots/vault.png)
+![Document Vault](public\screenshots\vault.png)
 
 ---
 
