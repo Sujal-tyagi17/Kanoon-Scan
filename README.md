@@ -4,29 +4,37 @@
 
 An AI-powered Legal Contract Analyzer that helps users understand legal agreements by identifying key clauses, assessing contractual risks, generating plain-English summaries, and producing professional legal reports.
 
+<p align="center">
+  <a href="https://kanoonscan.vercel.app/">
+    <img src="https://img.shields.io/badge/DEMO-LIVE-green?style=for-the-badge" alt="Demo Live" />
+  </a>
+  <img src="https://img.shields.io/badge/NEXT.JS-14-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TYPESCRIPT-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
+</p>
+
 ---
 
 ## 📸 Screenshots
 ### Landing Page
 
-![Landing Page](public\screenshots\landing.png)
+![Landing Page](public/screenshots/landing.png)
 
 ---
 ### Dashboard
 
-![Dashboard](public\screenshots\dashboard.png)
+![Dashboard](public/screenshots/dashboard.png)
 
 ---
 
 ### Contract Analysis
 
-![Analysis](public\screenshots\analysis.png)
+![Analysis](public/screenshots/analysis.png)
 
 ---
 
 ### Document Vault
 
-![Document Vault](public\screenshots\vault.png)
+![Document Vault](public/screenshots/vault.png)
 
 ---
 
