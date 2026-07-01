@@ -1,59 +1,94 @@
-# ⚖️ KanoonScan — Know Before You Sign
+# ⚖️ KanoonScan
 
-KanoonScan is a secure, AI-powered Legal Contract Analyzer built with Next.js 14, TypeScript, and MongoDB. It extracts text from contract files (PDF, DOCX, TXT) and grades them across balanced, commercial parameters to produce clean risk assessments and verdicts.
+> **Know Before You Sign**
 
-## 🚀 Key Features
+An AI-powered Legal Contract Analyzer that helps users understand legal agreements by identifying key clauses, assessing contractual risks, generating plain-English summaries, and producing professional legal reports.
 
-* **AI Contract Scanning & Verdicts**: Automatically parses agreements and computes objective risk scores based on commercial standards.
-* **Positive & Negative Assessments**: Offsets overall risk levels by matching negative risks against protective clauses (e.g. warranties, good-faith negotiations).
-* **Dynamic Color-Coded Interface**: Visually segments risk levels:
-  * **LOW**: Green (`#22C55E`)
-  * **MEDIUM**: Amber (`#FACC15`)
-  * **HIGH**: Orange (`#F97316`)
-  * **CRITICAL**: Red (`#EF4444`)
-* **Failover Analysis Pipeline**: Automatically fails over from Groq (Llama models) to the Google Gemini API to prevent limits or api token issues.
-* **Document Vault**: Manage, review, and delete your encrypted contracts repository.
-* **PDF Exporting**: Save structured legal reports locally.
+---
+
+## 📸 Screenshots
+### Landing Page
+
+![Landing Page](./screenshots/landing.png)
+
+---
+### Dashboard
+
+![Dashboard](./screenshots/dashboard.png)
+
+---
+
+### Contract Analysis
+
+![Analysis](./screenshots/analysis.png)
+
+---
+
+### Document Vault
+
+![Document Vault](./screenshots/vault.png)
+
+---
+
+## ✨ Features
+
+- 🤖 AI-powered legal contract analysis
+- 📄 Supports PDF, DOCX, and TXT documents
+- ⚖️ Automatic clause detection and classification
+- 📊 Dynamic risk scoring with commercial reasoning
+- 📝 Plain-English contract summaries
+- 💡 AI-generated legal recommendations
+- 📈 Risk categorization (Low, Medium, High, Critical)
+- 📂 Secure Document Vault
+- 📥 Export detailed PDF analysis reports
+- 🔐 User authentication with Clerk
+- ⚡ AI failover between Groq and Google Gemini
+- 🎨 Color-coded risk visualization
+
+---
 
 ## 🛠️ Tech Stack
 
-* **Frontend & Backend**: Next.js 14 (App Router), TailwindCSS, TypeScript
-* **Database**: MongoDB (via Native MongoClient)
-* **Auth**: Clerk
-* **AI Engines**: Groq SDK (Llama 3.3/3.1, Mixtral) & Google Gemini REST API
-* **Document Parsers**: PDF.js (Legacy Node.js build) & Mammoth (DOCX)
+- **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+- **Backend:** Next.js App Router
+- **Database:** MongoDB
+- **Authentication:** Clerk
+- **AI Models:** Google Gemini, Groq (Llama)
+- **Document Parsing:** PDF.js, Mammoth
+- **File Uploads:** UploadThing
 
-## 📦 Getting Started
+---
 
-### 1. Configure Environment Variables
-Create a `.env` file in the root directory:
+## 📊 Risk Levels
 
-```env
-# Clerk Auth
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_pub_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+| Level | Description |
+|--------|-------------|
+| 🟢 Low | Standard commercial terms with minimal legal concerns |
+| 🟡 Medium | Clauses that should be reviewed before signing |
+| 🟠 High | Significant contractual risks requiring attention |
+| 🔴 Critical | Serious legal concerns requiring professional review |
 
-# Database
-DATABASE_URL="mongodb://localhost:27017/lexscan"
+---
 
-# Uploadthing
-UPLOADTHING_SECRET=your_uploadthing_secret
-UPLOADTHING_APP_ID=your_uploadthing_app_id
+## 📁 Project Structure
 
-# AI API Credentials
-GEMINI_API_KEY=your_gemini_api_key
-GROQ_API_KEY=your_groq_api_key
+```text
+app/
+components/
+lib/
+actions/
+models/
+public/
 ```
 
-### 2. Install Dependencies
-```bash
-npm install
-```
+---
 
-### 3. Run Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) with your browser.
+## 👨‍💻 Author
+
+**Sujal Tyagi**
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
