@@ -40,18 +40,13 @@ An AI-powered Legal Contract Analyzer that helps users understand legal agreemen
 
 ## ✨ Features
 
-- 🤖 AI-powered legal contract analysis
-- 📄 Supports PDF, DOCX, and TXT documents
-- ⚖️ Automatic clause detection and classification
-- 📊 Dynamic risk scoring with commercial reasoning
-- 📝 Plain-English contract summaries
-- 💡 AI-generated legal recommendations
-- 📈 Risk categorization (Low, Medium, High, Critical)
-- 📂 Secure Document Vault
-- 📥 Export detailed PDF analysis reports
-- 🔐 User authentication with Clerk
-- ⚡ AI failover between Groq and Google Gemini
-- 🎨 Color-coded risk visualization
+* **AI Analysis**: Instantly detects and analyzes key legal clauses.
+* **Format Support**: Upload PDF, DOCX, and TXT agreements.
+* **Risk Scoring**: Provides a 0-100 score and assigns a low/medium/high/critical risk category.
+* **Plain English Summaries**: Translates complex legalese into clear text.
+* **Smart Actions**: Get recommendations, who benefits, and who is at risk.
+* **Document Vault**: Save, manage, and delete analyzed contracts safely.
+* **PDF Reports**: Export results into clean, print-friendly reports. 
 
 ---
 
