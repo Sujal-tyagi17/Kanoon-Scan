@@ -16,11 +16,11 @@ interface DocumentListProps {
 const getRiskBadgeClass = (risk: "HIGH" | "MEDIUM" | "LOW") => {
   switch (risk) {
     case "HIGH":
-      return "bg-error-container/20 text-error border border-error-container/30";
+      return "bg-[#ffb4ab]/15 text-[#ffb4ab] border border-[#ffb4ab]/30";
     case "MEDIUM":
-      return "bg-primary-container/20 text-primary border border-primary/20";
+      return "bg-[#f5a623]/15 text-[#f5a623] border border-[#f5a623]/30";
     case "LOW":
-      return "bg-tertiary/10 text-tertiary border border-tertiary/20";
+      return "bg-[#d6b400]/15 text-[#d6b400] border border-[#d6b400]/30";
   }
 };
 

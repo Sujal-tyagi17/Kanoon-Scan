@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 
 export default function TopBar() {
   const { user } = useUser();
@@ -13,9 +13,6 @@ export default function TopBar() {
       {/* Title & Badge */}
       <div className="flex items-center gap-2">
         <h2 className="font-headline-md text-headline-md font-extrabold text-primary">KanoonScan</h2>
-        <span className="bg-primary-container/20 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold tracking-widest border border-primary/30 uppercase ml-2 animate-pulse">
-          Intelligence
-        </span>
       </div>
 
       {/* Actions */}
@@ -32,17 +29,18 @@ export default function TopBar() {
           />
         </div>
 
-        {/* Notifications & User Info */}
+        {/* Notifications & SignOut */}
         <div className="flex items-center gap-stack-md">
           <button className="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant rounded-lg">
             <span className="material-symbols-outlined">notifications</span>
           </button>
           <div className="h-8 w-px bg-outline-variant mx-2 hidden sm:block"></div>
           <div className="hidden sm:flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs font-semibold text-on-surface">{displayName}</p>
-              <p className="text-[10px] text-outline">Legal Professional</p>
-            </div>
+            <SignOutButton redirectUrl="/">
+              <button className="bg-gradient-to-r from-primary-container to-primary px-4 py-2 text-xs font-label-caps text-[#452b00] font-bold rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all">
+                Logout
+              </button>
+            </SignOutButton>
           </div>
         </div>
       </div>

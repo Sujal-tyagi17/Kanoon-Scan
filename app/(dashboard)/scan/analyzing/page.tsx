@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Logo from "@/components/Logo";
 
 const LEGAL_TIPS = [
   "Always ensure that arbitration clauses specify the governing law and jurisdiction to avoid ambiguity in cross-border disputes.",
@@ -62,7 +63,7 @@ export default function AnalyzingPage() {
           throw new Error("Analysis failed");
         }
 
-        const { analysisId, data } = await response.json();
+        const { analysisId } = await response.json();
         
         // Animate to 100%
         setProgress(100);
@@ -84,41 +85,39 @@ export default function AnalyzingPage() {
     };
   }, [documentId, router]);
 
+  const stepConfig = [
+    { label: "Document Uploaded", doneLabel: "Document Uploaded", icon: "cloud_done" },
+    { label: "Extracting text...", doneLabel: "Text extracted", icon: "text_snippet" },
+    { label: "Analyzing clauses", doneLabel: "Analysis complete", icon: "psychology" },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#231c0f] overflow-y-auto">
+    <div className="min-h-screen flex flex-col bg-background overflow-y-auto">
       {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between border-b border-primary/10 px-6 lg:px-40 py-3 bg-[#231c0f]/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-            <span className="material-symbols-outlined text-2xl">gavel</span>
-          </div>
-          <h2 className="text-white text-lg font-bold leading-tight tracking-tight">
+      <header className="flex items-center justify-between border-b border-outline-variant px-6 lg:px-40 py-3 bg-surface-container/80 backdrop-blur-md sticky top-0 z-50">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <Logo />
+          <h2 className="text-on-background text-lg font-bold leading-tight tracking-tight">
             KanoonScan
           </h2>
-        </div>
+        </Link>
         <div className="flex flex-1 justify-end gap-8 items-center">
           <nav className="hidden md:flex items-center gap-8">
             <Link
               href="/dashboard"
-              className="text-slate-300 hover:text-primary text-sm font-medium transition-colors"
+              className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors"
             >
               Dashboard
             </Link>
             <Link
-              href="/dashboard/documents"
-              className="text-slate-300 hover:text-primary text-sm font-medium transition-colors"
+              href="/vault"
+              className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors"
             >
               Documents
             </Link>
             <Link
-              href="#"
-              className="text-slate-300 hover:text-primary text-sm font-medium transition-colors"
-            >
-              History
-            </Link>
-            <Link
-              href="#"
-              className="text-slate-300 hover:text-primary text-sm font-medium transition-colors"
+              href="/dashboard/settings"
+              className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors"
             >
               Settings
             </Link>
@@ -133,126 +132,126 @@ export default function AnalyzingPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-4 max-w-4xl mx-auto w-full">
-        {/* Large Pulsing Icon Section */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
-          <div className="relative flex items-center justify-center size-24 lg:size-32 rounded-full bg-[#231c0f] border-4 border-primary/30 shadow-2xl shadow-primary/20">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-4xl mx-auto w-full">
+        {/* Animated Scanner Icon */}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-primary/15 blur-3xl rounded-full scale-150 animate-pulse"></div>
+          <div className="relative flex items-center justify-center size-28 lg:size-36 rounded-full bg-surface-container border-2 border-primary/20 shadow-2xl shadow-primary/10">
+            {/* Orbiting ring */}
+            <div className="absolute inset-[-8px] rounded-full border-2 border-dashed border-primary/20 animate-[spin_8s_linear_infinite]"></div>
+            <div className="absolute inset-[-16px] rounded-full border border-dashed border-tertiary/10 animate-[spin_12s_linear_infinite_reverse]"></div>
             <span className="material-symbols-outlined text-primary text-5xl lg:text-6xl select-none">
-              balance
+              policy
             </span>
           </div>
         </div>
 
         {/* Header Text */}
-        <div className="text-center mb-6">
-          <h1 className="text-white text-2xl lg:text-3xl font-bold tracking-tight mb-2">
+        <div className="text-center mb-8">
+          <h1 className="text-on-background text-2xl lg:text-3xl font-bold tracking-tight mb-2">
             Analyzing Legal Document
           </h1>
-          <p className="text-slate-400 text-base">
+          <p className="text-on-surface-variant text-base">
             Our AI is processing your file for compliance and risk factors.
           </p>
         </div>
 
+        {error && (
+          <div className="w-full max-w-md mb-6 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm text-center">
+            <span className="material-symbols-outlined text-base mr-2 align-middle">error</span>
+            {error}
+            <Link href="/scan" className="block mt-2 text-primary underline text-xs">
+              Go back to scan
+            </Link>
+          </div>
+        )}
+
         {/* Progress Checklist */}
-        <div className="w-full max-w-md space-y-3 mb-6">
-          {/* Step 1: Upload - Always completed when on this page */}
-          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-green-500/5 border border-green-500/20">
-            <div className="flex items-center justify-center size-6 rounded-full bg-green-500 text-[#231c0f]">
-              <span className="material-symbols-outlined text-base font-bold">check</span>
-            </div>
-            <span className="text-slate-100 font-medium text-xs">Document Uploaded</span>
-          </div>
+        <div className="w-full max-w-md space-y-3 mb-8">
+          {stepConfig.map((step, index) => {
+            const stepNum = index + 1;
+            const isDone = currentStep > stepNum || (stepNum === 1);
+            const isActive = currentStep === stepNum && stepNum !== 1;
 
-          {/* Step 2: Text Extraction */}
-          <div className={`flex items-center gap-3 p-2.5 rounded-xl ${
-            currentStep >= 2
-              ? currentStep === 2
-                ? "bg-primary/10 border border-primary/30 animate-pulse"
-                : "bg-green-500/5 border border-green-500/20"
-              : "bg-slate-500/5 border border-slate-500/10 opacity-50"
-          }`}>
-            <div className={`flex items-center justify-center size-6 rounded-full ${
-              currentStep >= 3
-                ? "bg-green-500 text-[#231c0f]"
-                : currentStep === 2
-                ? "bg-primary text-[#231c0f]"
-                : "bg-slate-600 text-slate-300"
-            }`}>
-              <span className={`material-symbols-outlined text-base ${
-                currentStep === 2 ? "animate-spin" : currentStep >= 3 ? "font-bold" : ""
-              }`}>
-                {currentStep >= 3 ? "check" : currentStep === 2 ? "sync" : "hourglass_empty"}
-              </span>
-            </div>
-            <span className={`font-medium text-xs ${
-              currentStep >= 2 ? "text-white" : "text-slate-400"
-            }`}>
-              {currentStep >= 3 ? "Text extracted" : "Extracting text..."}
-            </span>
-          </div>
-
-          {/* Step 3: Analysis */}
-          <div className={`flex items-center gap-3 p-2.5 rounded-xl ${
-            currentStep >= 3
-              ? currentStep === 3
-                ? "bg-primary/10 border border-primary/30 animate-pulse"
-                : "bg-green-500/5 border border-green-500/20"
-              : "bg-slate-500/5 border border-slate-500/10 opacity-50"
-          }`}>
-            <div className={`flex items-center justify-center size-6 rounded-full ${
-              currentStep > 3
-                ? "bg-green-500 text-[#231c0f]"
-                : currentStep === 3
-                ? "bg-primary text-[#231c0f]"
-                : "bg-slate-600 text-slate-300"
-            }`}>
-              <span className={`material-symbols-outlined text-base ${
-                currentStep === 3 ? "animate-spin" : currentStep > 3 ? "font-bold" : ""
-              }`}>
-                {currentStep > 3 ? "check" : currentStep === 3 ? "sync" : "hourglass_empty"}
-              </span>
-            </div>
-            <span className={`font-medium text-xs ${
-              currentStep >= 3 ? "text-white font-semibold" : "text-slate-400"
-            }`}>
-              {currentStep > 3 ? "Analysis complete" : "Analyzing clauses"}
-            </span>
-          </div>
+            return (
+              <div
+                key={stepNum}
+                className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-500 ${
+                  isDone
+                    ? "bg-tertiary/5 border border-tertiary/20"
+                    : isActive
+                    ? "bg-primary/10 border border-primary/30"
+                    : "bg-surface-container-low border border-outline-variant/30 opacity-40"
+                }`}
+              >
+                <div
+                  className={`flex items-center justify-center size-7 rounded-full transition-all duration-300 ${
+                    isDone
+                      ? "bg-tertiary text-background"
+                      : isActive
+                      ? "bg-primary text-background"
+                      : "bg-outline/30 text-on-surface-variant"
+                  }`}
+                >
+                  <span
+                    className={`material-symbols-outlined text-sm ${
+                      isActive ? "animate-spin" : isDone ? "font-bold" : ""
+                    }`}
+                  >
+                    {isDone ? "check" : isActive ? "sync" : "hourglass_empty"}
+                  </span>
+                </div>
+                <span
+                  className={`font-medium text-sm ${
+                    isDone
+                      ? "text-tertiary"
+                      : isActive
+                      ? "text-on-background font-semibold"
+                      : "text-on-surface-variant"
+                  }`}
+                >
+                  {isDone ? step.doneLabel : step.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Progress Bar Section */}
-        <div className="w-full max-w-2xl bg-slate-900/40 p-4 rounded-2xl border border-primary/5">
-          <div className="flex justify-between items-end mb-2">
+        <div className="w-full max-w-2xl bg-surface-container p-5 rounded-2xl border border-outline-variant">
+          <div className="flex justify-between items-end mb-3">
             <div>
               <p className="text-primary font-bold text-sm">Scanning Progress</p>
-              <p className="text-slate-400 text-xs">AI analyzing document structure</p>
+              <p className="text-on-surface-variant text-xs">AI analyzing document structure</p>
             </div>
             <div className="text-right">
-              <span className="text-xl font-bold text-primary">{Math.round(progress)}%</span>
+              <span className="text-2xl font-bold text-primary tabular-nums">{Math.round(progress)}%</span>
             </div>
           </div>
-          <div className="w-full h-2.5 bg-slate-700/30 rounded-full overflow-hidden mb-3">
+          <div className="w-full h-2.5 bg-surface-container-low rounded-full overflow-hidden mb-4">
             <div
-              className="h-full bg-primary rounded-full shadow-[0_0_15px_rgba(249,160,6,0.5)] transition-all duration-500"
+              className="h-full bg-gradient-to-r from-primary to-tertiary rounded-full shadow-[0_0_15px_rgba(255,200,128,0.4)] transition-all duration-700 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <div className="flex items-start gap-2 p-2.5 bg-primary/5 rounded-lg border-l-4 border-primary italic">
-            <span className="material-symbols-outlined text-primary text-base">lightbulb</span>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              <span className="font-semibold not-italic text-slate-300">Legal Tip:</span> {legalTip}
+
+          {/* Legal Tip */}
+          <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-xl border-l-4 border-primary">
+            <span className="material-symbols-outlined text-primary text-base mt-0.5">lightbulb</span>
+            <p className="text-on-surface-variant text-xs leading-relaxed italic">
+              <span className="font-semibold not-italic text-on-surface">Legal Tip:</span> {legalTip}
             </p>
           </div>
         </div>
-      </main>
 
-      {/* Footer / Status */}
-      <footer className="p-3 text-center">
-        <p className="text-slate-500 text-[10px] uppercase tracking-widest font-semibold">
-          Secure Analysis
-        </p>
-      </footer>
+        {/* Security Badge */}
+        <div className="mt-6 flex items-center gap-2 text-on-surface-variant/50">
+          <span className="material-symbols-outlined text-xs">lock</span>
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold">
+            AES-256 Encrypted · Zero-Knowledge Processing
+          </p>
+        </div>
+      </main>
     </div>
   );
 }

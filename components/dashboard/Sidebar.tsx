@@ -28,7 +28,7 @@ export default function Sidebar() {
         <Logo className="w-10 h-10" />
         <div>
           <h1 className="text-md font-extrabold text-primary leading-tight">KanoonScan</h1>
-          <p className="text-[10px] uppercase tracking-widest text-outline">Institutional Intelligence</p>
+          <p className="text-[10px] uppercase tracking-widest text-outline">Know Before You Sign</p>
         </div>
       </div>
 

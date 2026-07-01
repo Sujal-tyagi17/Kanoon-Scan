@@ -20,7 +20,8 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     const scene = new THREE.Scene();
     
     // Add subtle fog to the scene for depth
-    scene.fog = new THREE.FogExp2(0x0b1326, 0.12);
+    // Add subtle fog to the scene for depth matching new gold background
+    scene.fog = new THREE.FogExp2(0x080600, 0.12);
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -33,20 +34,22 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
     
-    const blueLight = new THREE.PointLight(0x2563eb, 3, 20);
-    blueLight.position.set(5, 5, 5);
-    scene.add(blueLight);
+    // Primary Gold Light
+    const goldLight = new THREE.PointLight(0xf5a623, 3, 20);
+    goldLight.position.set(5, 5, 5);
+    scene.add(goldLight);
 
-    const greenLight = new THREE.PointLight(0x4edea3, 2, 20);
-    greenLight.position.set(-5, -3, 3);
-    scene.add(greenLight);
+    // Secondary Warm Amber Light
+    const amberLight = new THREE.PointLight(0xffc880, 2, 20);
+    amberLight.position.set(-5, -3, 3);
+    scene.add(amberLight);
 
     // Group to hold the document and scanner assembly
     const group = new THREE.Group();
     scene.add(group);
 
-    // 1. Perspective Grid at the bottom
-    const grid = new THREE.GridHelper(12, 24, 0x2563eb, 0x171f33);
+    // 1. Perspective Grid at the bottom (colored gold)
+    const grid = new THREE.GridHelper(12, 24, 0xf5a623, 0x23200f);
     grid.position.y = -2.8;
     grid.rotation.x = 0.1;
     scene.add(grid);
@@ -54,18 +57,18 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     // 2. Holographic Document body
     const docGeo = new THREE.BoxGeometry(2.2, 3.2, 0.08);
     const docMat = new THREE.MeshPhongMaterial({
-      color: 0x0f172a,
+      color: 0x110e02,
       shininess: 90,
       transparent: true,
       opacity: 0.85,
-      specular: new THREE.Color(0x2563eb),
+      specular: new THREE.Color(0xf5a623),
     });
     const docMesh = new THREE.Mesh(docGeo, docMat);
     group.add(docMesh);
 
-    // Wireframe overlay for the holographic edge look
+    // Wireframe overlay for the holographic gold edge look
     const wireGeo = new THREE.EdgesGeometry(docGeo);
-    const wireMat = new THREE.LineBasicMaterial({ color: 0x2563eb, linewidth: 2 });
+    const wireMat = new THREE.LineBasicMaterial({ color: 0xffc880, linewidth: 2 });
     const wireframe = new THREE.LineSegments(wireGeo, wireMat);
     docMesh.add(wireframe);
 
@@ -80,7 +83,7 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
       const lineWidth = isHighlighted ? 1.0 : Math.random() * 0.4 + 1.1;
       const lineGeo = new THREE.BoxGeometry(lineWidth, 0.06, 0.02);
       const lineMat = new THREE.MeshBasicMaterial({
-        color: isHighlighted ? 0x4edea3 : 0xffffff,
+        color: isHighlighted ? 0xffc880 : 0xffffff,
         transparent: true,
         opacity: isHighlighted ? 0.95 : 0.35,
       });
@@ -92,10 +95,10 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
       lineMeshes.push(lineMesh);
     }
 
-    // 4. Oscillating Laser Scan Line
+    // 4. Oscillating Laser Scan Line (Gold)
     const laserGeo = new THREE.BoxGeometry(2.4, 0.06, 0.12);
     const laserMat = new THREE.MeshBasicMaterial({
-      color: 0x4edea3,
+      color: 0xf5a623,
       transparent: true,
       opacity: 0.8,
     });
@@ -106,7 +109,7 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     // Laser glow aura
     const laserGlowGeo = new THREE.BoxGeometry(2.5, 0.3, 0.15);
     const laserGlowMat = new THREE.MeshBasicMaterial({
-      color: 0x4edea3,
+      color: 0xffc880,
       transparent: true,
       opacity: 0.25,
     });
@@ -118,7 +121,7 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     const nodeGroup = new THREE.Group();
     scene.add(nodeGroup);
 
-    const nodeColors = [0x4edea3, 0x2563eb, 0xb4c5ff];
+    const nodeColors = [0xffc880, 0xf5a623, 0xffe16d];
     const nodes: THREE.Mesh[] = [];
     const connectionLines: THREE.Line[] = [];
 
@@ -162,7 +165,7 @@ export default function Doc3DAnimation({ className = "w-full h-full" }: Doc3DAni
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
     
     const particleMat = new THREE.PointsMaterial({
-      color: 0xb4c5ff,
+      color: 0xffddb4,
       size: 0.05,
       transparent: true,
       opacity: 0.6,

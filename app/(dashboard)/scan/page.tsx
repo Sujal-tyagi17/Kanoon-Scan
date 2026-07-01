@@ -44,7 +44,7 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0b1326] text-on-background">
+    <div className="flex h-screen overflow-hidden bg-background text-on-background">
       {/* Sidebar */}
       <Sidebar />
 
@@ -65,7 +65,7 @@ export default function ScanPage() {
           <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-2xl">
             {/* Tabs */}
             <div className="p-3 border-b border-outline-variant bg-surface-container-low">
-              <div className="flex bg-[#0b1326]/50 p-1 rounded-lg w-full">
+              <div className="flex bg-background/50 p-1 rounded-lg w-full">
                 <button
                   onClick={() => setActiveTab("upload")}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-bold text-sm transition-all ${

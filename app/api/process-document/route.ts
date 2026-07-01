@@ -8,16 +8,16 @@ import { ObjectId } from "mongodb";
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth";
 
-// Set worker source for PDF.js
+// Configure local execution configurations for pdfjs-dist
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-async function extractTextFromPDF(fileUrl: string): Promise<string> {
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    const loadingTask = pdfjsLib.getDocument(fileUrl);
+    const uint8Array = new Uint8Array(buffer);
+    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
     const pdf = await loadingTask.promise;
     
     let fullText = "";
-    
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
@@ -26,7 +26,6 @@ async function extractTextFromPDF(fileUrl: string): Promise<string> {
         .join(" ");
       fullText += pageText + "\n";
     }
-    
     return fullText.trim();
   } catch (error) {
     console.error("Error extracting PDF text:", error);
@@ -34,12 +33,8 @@ async function extractTextFromPDF(fileUrl: string): Promise<string> {
   }
 }
 
-async function extractTextFromDOCX(fileUrl: string): Promise<string> {
+async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
   try {
-    const response = await fetch(fileUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
     const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
   } catch (error) {
@@ -58,14 +53,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { fileUrl, fileName, fileType } = await req.json();
+    // Read payload as multipart form-data
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
 
-    if (!fileUrl || !fileName) {
+    if (!file) {
       return NextResponse.json(
-        { error: "File URL and name are required" },
+        { error: "No file uploaded" },
         { status: 400 }
       );
     }
+
+    const fileName = file.name;
+    const fileType = file.type;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     const { db } = await connectToDatabase();
     const users = db.collection<User>("users");
@@ -73,21 +75,20 @@ export async function POST(req: NextRequest) {
 
     // Get user from database
     const user = await users.findOne({ clerkId: userId });
-
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     
     userObjectId = user._id!.toString();
 
-    // Create document record with UPLOADING status
+    // Create document record with PROCESSING status directly since upload is skipped
     const documentResult = await documents.insertOne({
       userId: userObjectId,
       name: fileName,
       type: fileType || "application/pdf",
-      fileUrl: fileUrl,
+      fileUrl: null, // No third-party Uploadthing URL needed
       rawText: "",
-      status: "UPLOADING",
+      status: "PROCESSING",
       createdAt: new Date(),
     });
 
@@ -95,23 +96,29 @@ export async function POST(req: NextRequest) {
 
     // Extract text based on file type
     let extractedText = "";
-    
     try {
       if (fileType === "application/pdf" || fileName.endsWith(".pdf")) {
-        extractedText = await extractTextFromPDF(fileUrl);
+        extractedText = await extractTextFromPDF(buffer);
       } else if (
         fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        fileName.endsWith(".docx")
+        fileName.endsWith(".docx") ||
+        fileName.endsWith(".doc")
       ) {
-        extractedText = await extractTextFromDOCX(fileUrl);
+        extractedText = await extractTextFromDOCX(buffer);
+      } else if (fileType.startsWith("text/") || fileName.endsWith(".txt")) {
+        extractedText = buffer.toString("utf-8");
       } else {
         throw new Error("Unsupported file type");
+      }
+
+      if (!extractedText.trim()) {
+        throw new Error("Extracted text is empty");
       }
 
       // Encrypt the extracted text for secure zero-knowledge storage
       const encryptedText = encryptText(extractedText);
 
-      // Update document with encrypted text and status
+      // Update document with encrypted text and complete the processing status
       await documents.updateOne(
         { _id: new ObjectId(documentId) },
         {
@@ -140,13 +147,12 @@ export async function POST(req: NextRequest) {
         { _id: new ObjectId(documentId) },
         { $set: { status: "ERROR" } }
       );
-      
       throw error;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error processing document:", error);
     return NextResponse.json(
-      { error: "Failed to process document" },
+      { error: error.message || "Failed to process document" },
       { status: 500 }
     );
   }

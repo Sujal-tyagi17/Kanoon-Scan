@@ -121,7 +121,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0b1326]">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <Sidebar />
 

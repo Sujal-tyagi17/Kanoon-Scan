@@ -45,7 +45,7 @@ export default function SettingsPage() {
     : user?.firstName || user?.username || "Legal Counsel";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0b1326] text-on-background">
+    <div className="flex h-screen overflow-hidden bg-background text-on-background">
       {/* Sidebar */}
       <Sidebar />
 

@@ -79,17 +79,31 @@ export async function POST(req: NextRequest) {
         ? analysisResult.plainEnglish.join("\n") 
         : '';
 
-    // Insert Analysis Document
-    const analysisInsertResult = await analyses.insertOne({
-      documentId: document._id!.toString(),
-      riskScore: (typeof analysisResult.riskScore === 'number' && !isNaN(analysisResult.riskScore)) ? analysisResult.riskScore : 50,
-      riskLevel: analysisResult.riskLevel || 'MEDIUM',
-      summary: analysisResult.summary || 'Summary unavailable.',
-      plainEnglish: plainEnglishText || 'Plain English explanation unavailable.',
-      createdAt: new Date(),
-    });
-
-    const analysisId = analysisInsertResult.insertedId.toString();
+    // Insert Analysis Document (handle race condition with duplicate key)
+    let analysisId: string;
+    try {
+      const analysisInsertResult = await analyses.insertOne({
+        documentId: document._id!.toString(),
+        riskScore: (typeof analysisResult.riskScore === 'number' && !isNaN(analysisResult.riskScore)) ? analysisResult.riskScore : 50,
+        riskLevel: analysisResult.riskLevel || 'MEDIUM',
+        summary: analysisResult.summary || 'Summary unavailable.',
+        plainEnglish: plainEnglishText || 'Plain English explanation unavailable.',
+        createdAt: new Date(),
+      });
+      analysisId = analysisInsertResult.insertedId.toString();
+    } catch (insertError: any) {
+      // E11000 = duplicate key — another request already created the analysis
+      if (insertError.code === 11000) {
+        const existing = await analyses.findOne({ documentId: document._id!.toString() });
+        if (existing) {
+          return NextResponse.json({
+            success: true,
+            analysisId: existing._id!.toString(),
+          });
+        }
+      }
+      throw insertError;
+    }
 
     // Insert Clauses (AI Clause Detection & Risk Suggestions)
     if (analysisResult.clauses && analysisResult.clauses.length > 0) {

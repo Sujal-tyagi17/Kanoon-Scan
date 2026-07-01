@@ -1,90 +1,121 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UploadButton } from "@uploadthing/react";
-import type { OurFileRouter } from "@/lib/uploadthing";
 
 export default function FileUploader() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleFile = async (file: File) => {
+    // Validate file size (16MB max)
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File is too large. Maximum size is 16MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/process-document", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to process document");
+      }
+
+      const { documentId } = await response.json();
+
+      // Redirect to analyzing page
+      router.push(`/scan/analyzing?documentId=${documentId}`);
+    } catch (err: any) {
+      console.error("Error processing document:", err);
+      setError(err.message || "Failed to process document. Please try again.");
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <div className="border-2 border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center gap-4 py-16 transition-all hover:bg-surface-variant/20 hover:border-primary/50 group">
-        <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+      <div
+        onDragEnter={handleDrag}
+        onDragOver={handleDrag}
+        onDragLeave={handleDrag}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-4 py-16 transition-all duration-300 ${
+          dragActive
+            ? "border-primary bg-primary/5 scale-[0.99]"
+            : "border-outline-variant hover:bg-surface-variant/20 hover:border-primary/50"
+        } group relative cursor-pointer`}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.doc,.txt"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleFile(e.target.files[0]);
+            }
+          }}
+          disabled={isUploading}
+        />
+
+        <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
           <span className="material-symbols-outlined text-primary text-4xl">
-            cloud_upload
+            {isUploading ? "sync" : "cloud_upload"}
           </span>
         </div>
-        <div className="text-center space-y-2">
-          <p className="text-on-surface text-lg font-bold">Drop your legal document here</p>
+        
+        <div className="text-center space-y-2 select-none">
+          <p className="text-on-surface text-lg font-bold">
+            {isUploading ? "Reading document content..." : "Drop your legal document here"}
+          </p>
           <p className="text-on-surface-variant text-sm">
             PDF, DOCX, or TXT files up to 16MB
           </p>
         </div>
-        
-        <UploadButton<OurFileRouter, "documentUploader">
-          endpoint="documentUploader"
-          onClientUploadComplete={async (res) => {
-            if (!res || res.length === 0) {
-              setError("Upload failed");
-              return;
-            }
 
-            const file = res[0];
-            setIsUploading(true);
-            setError(null);
-
-            try {
-              // Process the document (extract text)
-              const processResponse = await fetch("/api/process-document", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fileUrl: file.url,
-                  fileName: file.name,
-                  fileType: file.type,
-                }),
-              });
-
-              if (!processResponse.ok) {
-                throw new Error("Failed to process document");
-              }
-
-              const { documentId } = await processResponse.json();
-
-              // Redirect to analyzing page with document ID
-              router.push(`/scan/analyzing?documentId=${documentId}`);
-            } catch (err) {
-              console.error("Error processing document:", err);
-              setError("Failed to process document. Please try again.");
-              setIsUploading(false);
-            }
-          }}
-          onUploadError={(error: Error) => {
-            setError(`Upload error: ${error.message}`);
-            setIsUploading(false);
-          }}
-          appearance={{
-            button: "bg-primary-container text-white px-8 py-3 rounded-lg font-semibold hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all w-full md:w-auto cursor-pointer",
-            allowedContent: "hidden",
-          }}
-          content={{
-            button: isUploading ? (
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined animate-spin text-lg">sync</span>
-                Processing...
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">folder_open</span>
-                Browse Files
-              </div>
-            ),
-          }}
-        />
+        <button
+          type="button"
+          disabled={isUploading}
+          className="bg-primary-container text-white px-8 py-3 rounded-lg font-semibold hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all cursor-pointer flex items-center gap-2"
+        >
+          <span className={`material-symbols-outlined text-lg ${isUploading ? "animate-spin" : ""}`}>
+            {isUploading ? "sync" : "folder_open"}
+          </span>
+          {isUploading ? "Processing..." : "Browse Files"}
+        </button>
       </div>
 
       {error && (

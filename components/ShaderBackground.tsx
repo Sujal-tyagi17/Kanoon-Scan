@@ -62,21 +62,21 @@ void main() {
     float n = noise(uv * 3.0 + u_time * 0.1);
     n += noise(uv * 6.0 - u_time * 0.05) * 0.5;
     
-    // Deep Institutional Navy
-    vec3 color = vec3(0.043, 0.075, 0.149); // #0b1326
+    // Deep Gold-Black Background (#080600)
+    vec3 color = vec3(0.031, 0.024, 0.0);
     
-    // Subtle flowing energy lines
+    // Subtle flowing gold energy lines
     float line = smoothstep(0.48, 0.5, abs(uv.y - 0.5 + sin(uv.x * 3.0 + u_time) * 0.05));
-    color += vec3(0.145, 0.388, 0.922) * n * 0.1; // #2563eb
+    color += vec3(0.960, 0.650, 0.137) * n * 0.06; // #f5a623
     
-    // Interaction Glow
+    // Interaction Glow (Primary Gold #ffc880)
     float dist = length(uv - m);
-    color += vec3(0.306, 0.871, 0.639) * (1.0 - smoothstep(0.0, 0.4, dist)) * 0.05; // #4edea3
+    color += vec3(1.000, 0.784, 0.502) * (1.0 - smoothstep(0.0, 0.4, dist)) * 0.05;
     
     // Grid overlay
     vec2 grid = fract(uv * 50.0);
     float g = smoothstep(0.02, 0.0, grid.x) + smoothstep(0.02, 0.0, grid.y);
-    color += g * 0.02;
+    color += g * 0.015;
 
     gl_FragColor = vec4(color, 1.0);
 }`;

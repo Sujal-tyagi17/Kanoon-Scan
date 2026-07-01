@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Create document with the pasted text
     const documentResult = await documents.insertOne({
       userId: dbUser!._id!.toString(),
-      name: `Pasted Text - ${new Date().toLocaleDateString()}`,
+      name: "Pasted Text",
       type: "text/plain",
       fileUrl: "",
       rawText: encryptedText,
