@@ -21,6 +21,35 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "KanoonScan - Know Before You Sign",
   description: "AI-powered legal document analysis. Extract critical clauses, identify risks, and synthesize summaries with Bloomberg-level precision.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+    other: [
+      {
+        rel: "apple-touch-icon-precomposed",
+        url: "/favicon.png",
+      },
+    ],
+  },
+  openGraph: {
+    title: "KanoonScan - Know Before You Sign",
+    description: "AI-powered legal document analysis.",
+    images: [
+      {
+        url: "/favicon.png",
+        width: 192,
+        height: 192,
+        alt: "KanoonScan Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "KanoonScan - Know Before You Sign",
+    description: "AI-powered legal document analysis.",
+    images: ["/favicon.png"],
+  },
 };
 
 export default function RootLayout({
