@@ -3,6 +3,11 @@ import crypto from "crypto";
 const ALGORITHM = "aes-256-cbc";
 const IV_LENGTH = 16;
 
+if (!process.env.ENCRYPTION_KEY && process.env.NODE_ENV === "production") {
+  // The fallback key is public (it's in this repo), so data encrypted with it isn't really protected.
+  console.error("[encryption] ENCRYPTION_KEY is not set — falling back to the insecure default key.");
+}
+
 const rawKey = process.env.ENCRYPTION_KEY || "kanoonscan-default-secure-passkey-32-chars!";
 const KEY = crypto.createHash("sha256").update(rawKey).digest();
 

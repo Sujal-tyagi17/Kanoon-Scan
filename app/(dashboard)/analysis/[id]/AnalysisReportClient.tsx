@@ -25,7 +25,13 @@ const esc = (v: unknown) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-export default function AnalysisReportClient({ analysisData }: { analysisData: AnalysisWithRelations }) {
+export default function AnalysisReportClient({
+  analysisData,
+  initialChat = [],
+}: {
+  analysisData: AnalysisWithRelations;
+  initialChat?: { role: string; message: string }[];
+}) {
   // Sort state
   const [sortBy, setSortBy] = useState<"Risk Level" | "Clause Order">("Risk Level");
   const [activeTab, setActiveTab] = useState<"all" | "high" | "plain" | "saved">("all");
@@ -102,7 +108,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
 
   // AI Chat state
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState<{ role: string; message: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: string; message: string }[]>(initialChat);
   const [chatLoading, setChatLoading] = useState(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,6 +124,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           analysisId: analysisData.id || analysisData._id,
+          saveToHistory: false,
           message: `Generate an improved, fairer alternative clause to replace this risky clause. Return ONLY the replacement clause text, no explanation.\n\nOriginal clause: "${clause.originalText}"\n\nRisk: ${clause.whyRisky}\nSuggestion: ${clause.suggestion}`,
         }),
       });
