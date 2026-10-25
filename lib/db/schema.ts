@@ -68,12 +68,18 @@ export const COLLECTIONS: Record<string, { validator: object; indexes: IndexDesc
           positiveClauses: { bsonType: "array" },
           keyInformation: { bsonType: "object" },
           confidenceScore: { bsonType: ["string", "null", "int", "long", "double"] },
+          shareToken: strOrNull,
+          shareEnabled: { bsonType: "bool" },
           createdAt: date,
         },
       },
     },
     // One analysis per document (also makes the duplicate-request guard in /api/analyze work)
-    indexes: [{ key: { documentId: 1 }, name: "documentId_unique", unique: true }],
+    indexes: [
+      { key: { documentId: 1 }, name: "documentId_unique", unique: true },
+      // Public share links look analyses up by token
+      { key: { shareToken: 1 }, name: "shareToken_unique", unique: true, partialFilterExpression: { shareToken: { $type: "string" } } },
+    ],
   },
 
   clauses: {
@@ -132,6 +138,27 @@ export const COLLECTIONS: Record<string, { validator: object; indexes: IndexDesc
       },
     },
     indexes: [{ key: { analysisId: 1, createdAt: 1 }, name: "analysis_time" }],
+  },
+
+  rate_limits: {
+    validator: {
+      $jsonSchema: {
+        bsonType: "object",
+        required: ["key", "userId", "action", "count", "expiresAt"],
+        properties: {
+          key: { ...str, description: "userId:action:YYYY-MM-DD (IST day)" },
+          userId: str,
+          action: { enum: ["analysis", "chat"] },
+          count: num,
+          expiresAt: date,
+        },
+      },
+    },
+    indexes: [
+      { key: { key: 1 }, name: "key_unique", unique: true },
+      // MongoDB deletes counters automatically once they expire
+      { key: { expiresAt: 1 }, name: "expiresAt_ttl", expireAfterSeconds: 0 },
+    ],
   },
 
   audit_logs: {

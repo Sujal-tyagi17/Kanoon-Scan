@@ -46,7 +46,9 @@ An AI-powered Legal Contract Analyzer that helps users understand legal agreemen
 * **Plain English Summaries**: Translates complex legalese into clear text.
 * **Smart Actions**: Get recommendations, who benefits, and who is at risk.
 * **Document Vault**: Save, manage, and delete analyzed contracts safely.
-* **PDF Reports**: Export results into clean, print-friendly reports. 
+* **PDF Reports**: Export results into clean, print-friendly reports.
+* **Shareable Links**: Turn on a read-only public link for any report (document text is never exposed), and turn it off any time.
+* **Fair-use Limits**: Per-user daily limits on AI analyses and chat messages protect the API budget.
 
 ---
 
@@ -91,6 +93,7 @@ npm run dev
 | `ENCRYPTION_KEY` | Secret for encrypting document text at rest — set once, never change |
 | `WEBHOOK_SECRET` | Optional Clerk webhook secret |
 | `GROQ_MODELS`, `GEMINI_MODELS` | Optional comma-separated model overrides |
+| `DAILY_ANALYSIS_LIMIT`, `DAILY_CHAT_LIMIT` | Optional per-user daily limits (default 10 and 50, reset at midnight IST) |
 
 `GET /api/health` reports which variables are set (yes/no only) and whether MongoDB is reachable.
 
@@ -109,6 +112,7 @@ MongoDB is schemaless, so the schema is enforced with `$jsonSchema` validators a
 | `riskCategories` | analysisId, name, score, level | analysisId |
 | `chats` | analysisId, role (USER/ASSISTANT), message | analysisId + createdAt |
 | `audit_logs` | userId, action, details | userId + createdAt |
+| `rate_limits` | key (user:action:day), count, expiresAt | key (unique), expiresAt (TTL) |
 
 ---
 

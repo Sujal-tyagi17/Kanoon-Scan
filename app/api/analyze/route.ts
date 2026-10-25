@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrCreateDbUser } from "@/lib/auth";
+import { consumeLimit, limitMessage, refundLimit } from "@/lib/rate-limit";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
 import { logAuditEvent } from "@/lib/db/audit";
@@ -12,6 +13,7 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
+  let quotaUserId: string | undefined;
   
   try {
     const dbUser = await getOrCreateDbUser();
@@ -54,6 +56,17 @@ export async function POST(req: NextRequest) {
         data: existingAnalysis,
       });
     }
+
+    // Daily quota (only counted when we actually call the AI)
+    const quota = await consumeLimit(dbUser._id.toString(), "analysis");
+    if (!quota.allowed) {
+      documentId = undefined; // don't mark the document FAILED
+      return NextResponse.json(
+        { error: limitMessage("analysis", quota), limit: quota.limit, resetsAt: quota.resetsAt },
+        { status: 429 }
+      );
+    }
+    quotaUserId = dbUser._id.toString();
 
     // Set document status to ANALYZING
     await documents.updateOne(
@@ -159,6 +172,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error analyzing document:", error);
+
+    // The AI failed, so give the user their scan back
+    if (quotaUserId) await refundLimit(quotaUserId, "analysis");
     
     if (documentId) {
       const { db } = await connectToDatabase();

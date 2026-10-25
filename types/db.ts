@@ -32,6 +32,8 @@ export interface Analysis {
   positiveClauses?: string[];
   keyInformation?: Record<string, string>;
   confidenceScore?: string | null;
+  shareToken?: string | null;
+  shareEnabled?: boolean;
 }
 
 export interface Clause {

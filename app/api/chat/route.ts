@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrCreateDbUser } from "@/lib/auth";
+import { consumeLimit, limitMessage, refundLimit } from "@/lib/rate-limit";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
 import { chatWithDocument } from "@/lib/gemini/chat";
@@ -76,14 +77,19 @@ export async function POST(req: NextRequest) {
     // Decrypt the rawText (AES-256 decrypted in-memory only)
     const decryptedText = decryptText(document.rawText);
 
+    const quota = await consumeLimit(dbUser._id.toString(), "chat");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: limitMessage("chat", quota) }, { status: 429 });
+    }
+
     // Get AI response
-    const aiResponse = await chatWithDocument(
-      analysis.summary,
-      clausesSummary,
-      decryptedText,
-      chatHistory,
-      message
-    );
+    let aiResponse: string;
+    try {
+      aiResponse = await chatWithDocument(analysis.summary, clausesSummary, decryptedText, chatHistory, message);
+    } catch (aiError) {
+      await refundLimit(dbUser._id.toString(), "chat");
+      throw aiError;
+    }
 
     // Save both messages to history (skipped for one-off requests like clause drafts)
     if (saveToHistory) {
