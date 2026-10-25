@@ -5,6 +5,7 @@ import { UserButton } from "@clerk/nextjs";
 import { useState, useRef } from "react";
 import { Analysis, Document, Clause, RiskCategory } from "@/types/db";
 import Logo from "@/components/Logo";
+import SharePanel from "@/components/analysis/SharePanel";
 
 type AnalysisWithRelations = Analysis & {
   document: Document;
@@ -128,11 +129,11 @@ export default function AnalysisReportClient({
           message: `Generate an improved, fairer alternative clause to replace this risky clause. Return ONLY the replacement clause text, no explanation.\n\nOriginal clause: "${clause.originalText}"\n\nRisk: ${clause.whyRisky}\nSuggestion: ${clause.suggestion}`,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
         setDraftText(data.message || "Failed to generate draft.");
       } else {
-        setDraftText("Error: Could not generate draft. Please try again.");
+        setDraftText(data.error || "Error: Could not generate draft. Please try again.");
       }
     } catch (e) {
       setDraftText("Error: Network failure. Please try again.");
@@ -331,29 +332,6 @@ export default function AnalysisReportClient({
     }
   };
 
-  // Share handler
-  const [shareToast, setShareToast] = useState(false);
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `KanoonScan Report: ${document.name}`,
-          text: `Legal analysis of "${document.name}" — Risk Score: ${analysisData.riskScore}/100`,
-          url,
-        });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareToast(true);
-        setTimeout(() => setShareToast(false), 2500);
-      }
-    } catch {
-      await navigator.clipboard.writeText(url);
-      setShareToast(true);
-      setTimeout(() => setShareToast(false), 2500);
-    }
-  };
-
   // AI Chat handler
   const handleSendChat = async () => {
     const msg = chatInput.trim();
@@ -370,11 +348,14 @@ export default function AnalysisReportClient({
           message: msg,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
         setChatMessages((prev) => [...prev, { role: "ASSISTANT", message: data.message }]);
       } else {
-        setChatMessages((prev) => [...prev, { role: "ASSISTANT", message: "Sorry, I couldn't process that. Please try again." }]);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "ASSISTANT", message: data.error || "Sorry, I couldn't process that. Please try again." },
+        ]);
       }
     } catch (e) {
       setChatMessages((prev) => [...prev, { role: "ASSISTANT", message: "Network error. Please try again." }]);
@@ -458,13 +439,11 @@ export default function AnalysisReportClient({
 
         <div className="flex items-center gap-4">
           <div className="flex gap-2 relative">
-            <button
-              onClick={handleShare}
-              className="flex items-center justify-center rounded-lg h-9 w-9 bg-surface-container border border-outline-variant text-on-surface-variant hover:text-primary transition-colors"
-              title="Share report link"
-            >
-              <span className="material-symbols-outlined text-lg">share</span>
-            </button>
+            <SharePanel
+              analysisId={String(analysisData.id || analysisData._id)}
+              initialEnabled={!!analysisData.shareEnabled}
+              initialToken={analysisData.shareToken || null}
+            />
             <button
               onClick={handleExportReport}
               className="flex items-center justify-center rounded-lg h-9 px-4 bg-primary-container text-[#452b00] font-semibold text-sm hover:shadow-[0_0_15px_rgba(245,166,35,0.35)] transition-all"
@@ -474,12 +453,6 @@ export default function AnalysisReportClient({
                 <span className="hidden sm:inline">Export Report</span>
               </span>
             </button>
-            {/* Share toast */}
-            {shareToast && (
-              <div className="absolute top-12 right-0 bg-tertiary text-[#003824] text-xs font-bold px-4 py-2 rounded-lg shadow-xl animate-in fade-in z-50 whitespace-nowrap">
-                ✓ Link copied to clipboard!
-              </div>
-            )}
           </div>
           <UserButton
             appearance={{

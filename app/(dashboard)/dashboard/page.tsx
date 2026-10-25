@@ -7,6 +7,7 @@ import DocumentList from "@/components/dashboard/DocumentList";
 import RiskSummaryChart from "@/components/dashboard/RiskSummaryChart";
 import { getOrCreateDbUser } from "@/lib/auth";
 import { listUserDocuments } from "@/lib/documents";
+import { getUsage } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,10 @@ export default async function DashboardPage() {
   const dbUser = await getOrCreateDbUser();
   if (!dbUser) redirect("/sign-in");
 
-  const [clerkUser, allDocs] = await Promise.all([
+  const [clerkUser, allDocs, usage] = await Promise.all([
     currentUser(),
     listUserDocuments(dbUser._id.toString()),
+    getUsage(dbUser._id.toString(), "analysis").catch(() => null),
   ]);
 
   const completed = allDocs.filter((d) => d.status === "Completed");
@@ -29,7 +31,12 @@ export default async function DashboardPage() {
   const firstName = clerkUser?.firstName || clerkUser?.username || "there";
 
   const stats = [
-    { label: "Docs scanned", icon: "description", value: allDocs.length },
+    {
+      label: "Docs scanned",
+      icon: "description",
+      value: allDocs.length,
+      hint: usage ? `${usage.used} / ${usage.limit} analyses used today` : undefined,
+    },
     { label: "Analysed", icon: "check_circle", value: completed.length },
     {
       label: "Avg risk score",
