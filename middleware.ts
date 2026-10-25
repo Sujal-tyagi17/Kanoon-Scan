@@ -11,7 +11,7 @@ const isProtectedPage = createRouteMatcher([
 const isAuthPage = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
 // Webhooks are authenticated by their own signature, not a Clerk session.
-const isPublicApi = createRouteMatcher(["/api/webhooks(.*)"]);
+const isPublicApi = createRouteMatcher(["/api/webhooks(.*)", "/api/health"]);
 const isApi = createRouteMatcher(["/api(.*)", "/trpc(.*)"]);
 
 export default clerkMiddleware(
