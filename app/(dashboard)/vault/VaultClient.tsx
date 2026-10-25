@@ -1,218 +1,133 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import DocumentList from "@/components/dashboard/DocumentList";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { DocumentListItem } from "@/lib/utils/documents-ui";
 
-interface VaultDocument {
-  id: string;
-  name: string;
-  dateAnalyzed: string;
-  riskLevel: string; // Allow "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
-  status: "Completed" | "Processing";
-  icon: string;
-}
+const RISK_ORDER: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
 
-interface VaultClientProps {
-  initialDocuments: VaultDocument[];
-}
+export default function VaultClient({ initialDocuments }: { initialDocuments: DocumentListItem[] }) {
+  const [documents, setDocuments] = useState(initialDocuments);
+  const [query, setQuery] = useState("");
+  const [riskFilter, setRiskFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState<"date" | "risk" | "name">("date");
+  const [pendingDelete, setPendingDelete] = useState<DocumentListItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default function VaultClient({ initialDocuments }: VaultClientProps) {
-  const [documents, setDocuments] = useState<VaultDocument[]>(initialDocuments);
-  const [filterText, setFilterText] = useState("");
-  const [selectedType, setSelectedType] = useState("All Files");
-  const [sortBy, setSortBy] = useState("Date Added");
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = documents.filter((d) => {
+      if (q && !d.name.toLowerCase().includes(q)) return false;
+      if (riskFilter === "ALL") return true;
+      if (riskFilter === "PENDING") return d.status !== "Completed";
+      return d.riskLevel === riskFilter;
+    });
+    if (sortBy === "name") return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "risk")
+      return [...filtered].sort((a, b) => (RISK_ORDER[b.riskLevel || ""] || 0) - (RISK_ORDER[a.riskLevel || ""] || 0));
+    return filtered; // already newest-first from the server
+  }, [documents, query, riskFilter, sortBy]);
 
-  const getRiskBadgeClass = (risk: string) => {
-    switch (risk) {
-      case "CRITICAL":
-        return "bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30";
-      case "HIGH":
-        return "bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30";
-      case "MEDIUM":
-        return "bg-[#FACC15]/15 text-[#FACC15] border border-[#FACC15]/30";
-      case "LOW":
-        return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
-      default:
-        return "bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30";
-    }
-  };
-
-  const handleDelete = async (docId: string, docName: string) => {
-    if (!confirm(`Are you sure you want to delete "${docName}"? This will permanently delete the scan and all analyzed risk details.`)) {
-      return;
-    }
-
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const doc = pendingDelete;
+    setDeletingId(doc.id);
+    setError(null);
     try {
       const res = await fetch("/api/documents/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: docId }),
+        body: JSON.stringify({ documentId: doc.id }),
       });
-
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((d) => d.id !== docId));
-      } else {
-        const errData = await res.json();
-        alert(`Failed to delete document: ${errData.error || "Unknown error"}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete document");
       }
-    } catch (err) {
-      console.error("Error deleting document:", err);
-      alert("Failed to delete document. Please try again.");
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setPendingDelete(null);
+    } catch (e: any) {
+      setError(e.message || "Failed to delete document. Please try again.");
+      setPendingDelete(null);
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  // 1. Filter documents by name (search) & type (NDA, Contract)
-  const filtered = documents.filter((doc) => {
-    const matchesSearch = doc.name.toLowerCase().includes(filterText.toLowerCase());
-    
-    if (selectedType === "Contracts") {
-      // Simple name check heuristic
-      return matchesSearch && !doc.name.toLowerCase().includes("nda");
-    }
-    if (selectedType === "NDAs") {
-      return matchesSearch && doc.name.toLowerCase().includes("nda");
-    }
-    return matchesSearch;
-  });
-
-  // 2. Sort documents
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "Name (A-Z)") {
-      return a.name.localeCompare(b.name);
-    }
-    if (sortBy === "Risk Level") {
-      const riskVal: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-      return (riskVal[b.riskLevel] || 0) - (riskVal[a.riskLevel] || 0);
-    }
-    // Default: Date Added (descending by sorting initial db index order or ID comparisons)
-    return 0; // Preserve default descending DB fetch order
-  });
+  const selectCls =
+    "text-sm bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-on-surface outline-none focus:border-primary cursor-pointer";
 
   return (
-    <div className="bg-surface-container p-6 rounded-xl border border-outline-variant">
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-outline-variant/30">
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">
-            search
-          </span>
-          <input
-            className="bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm w-full text-on-surface outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-            placeholder="Filter vault..."
-            type="text"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-on-surface-variant font-data-label">Type:</span>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="text-xs font-semibold bg-background border border-outline-variant/30 rounded p-1.5 cursor-pointer text-on-surface outline-none focus:border-primary"
-            >
-              <option value="All Files">All Files</option>
-              <option value="Contracts">Contracts</option>
-              <option value="NDAs">NDAs</option>
-            </select>
+    <div className="space-y-4">
+      {documents.length > 0 && (
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+          <div className="relative w-full md:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <input
+              className="field !py-2 pl-10"
+              placeholder="Search by file name…"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search documents"
+            />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-on-surface-variant font-data-label">Sort:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-xs font-semibold bg-background border border-outline-variant/30 rounded p-1.5 cursor-pointer text-on-surface outline-none focus:border-primary"
-            >
-              <option value="Date Added">Date Added</option>
-              <option value="Risk Level">Risk Level</option>
-              <option value="Name (A-Z)">Name (A-Z)</option>
-            </select>
+          <div className="flex gap-3">
+            <label className="flex items-center gap-2 text-xs text-on-surface-variant">
+              Risk
+              <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} className={selectCls}>
+                <option value="ALL">All</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+                <option value="PENDING">Not analysed</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-on-surface-variant">
+              Sort
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className={selectCls}>
+                <option value="date">Newest first</option>
+                <option value="risk">Highest risk</option>
+                <option value="name">Name (A–Z)</option>
+              </select>
+            </label>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-outline-variant text-on-surface-variant font-data-label text-[11px] uppercase tracking-widest">
-              <th className="pb-4 pl-4">Document Name</th>
-              <th className="pb-4">Date Uploaded</th>
-              <th className="pb-4">Risk Level</th>
-              <th className="pb-4">Status</th>
-              <th className="pb-4 pr-4 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant/30">
-            {sorted.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-16 text-center text-on-surface-variant">
-                  <span className="material-symbols-outlined text-5xl mb-3 opacity-30">inventory_2</span>
-                  <p className="font-semibold text-md">No matching files found</p>
-                  <p className="text-sm mt-1">Try adjusting your filters or search query.</p>
-                </td>
-              </tr>
-            ) : (
-              sorted.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="group hover:bg-surface-variant/30 transition-colors"
-                >
-                  <td className="py-4 pl-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-8 rounded bg-primary/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-primary text-sm">
-                          {doc.icon}
-                        </span>
-                      </div>
-                      <span className="font-medium text-on-surface">{doc.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 text-sm text-on-surface-variant font-data-label">
-                    {doc.dateAnalyzed}
-                  </td>
-                  <td className="py-4">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase ${getRiskBadgeClass(
-                        doc.riskLevel
-                      )}`}
-                    >
-                      {doc.riskLevel}
-                    </span>
-                  </td>
-                  <td className="py-4 text-sm">
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`size-2 rounded-full ${
-                          doc.status === "Completed"
-                            ? "bg-tertiary"
-                            : "bg-outline animate-pulse"
-                        }`}
-                      ></span>{" "}
-                      {doc.status}
-                    </span>
-                  </td>
-                  <td className="py-4 pr-4 text-right">
-                    <div className="flex gap-2 justify-end items-center">
-                      <Link href={`/analysis/${doc.id}`} className="text-on-surface-variant hover:text-primary transition-colors inline-block p-1" title="View analysis">
-                        <span className="material-symbols-outlined text-lg">visibility</span>
-                      </Link>
-                      <button 
-                        onClick={() => handleDelete(doc.id, doc.name)}
-                        className="text-on-surface-variant hover:text-error transition-colors inline-block p-1" 
-                        title="Delete scan"
-                      >
-                        <span className="material-symbols-outlined text-lg">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {error && (
+        <div role="alert" className="p-3 bg-error/10 border border-error/30 rounded-lg text-error text-sm flex items-center gap-2">
+          <span className="material-symbols-outlined text-base">error</span>
+          {error}
+        </div>
+      )}
+
+      <DocumentList
+        documents={visible}
+        onDelete={setPendingDelete}
+        deletingId={deletingId}
+        emptyTitle={documents.length ? "No matching documents" : "Your vault is empty"}
+        emptyBody={documents.length ? "Try a different search or filter." : "Scanned documents will appear here."}
+        showEmptyCta={documents.length === 0}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this document?"
+        description={
+          <>
+            <span className="font-semibold text-on-surface">{pendingDelete?.name}</span> and its analysis,
+            clauses and chat history will be permanently deleted.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        loading={!!deletingId}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

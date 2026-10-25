@@ -1,30 +1,24 @@
 import { redirect } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
-import { User, Document, Analysis, Clause, RiskCategory } from "@/types/db";
+import { Document, Analysis, Clause, RiskCategory } from "@/types/db";
 import { ObjectId } from "mongodb";
 import AnalysisReportClient from "./AnalysisReportClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function AnalysisPage({ params }: { params: { id: string } }) {
-  const user = await currentUser();
-  
-  if (!user) {
+  const dbUser = await getOrCreateDbUser();
+  if (!dbUser) {
     redirect("/sign-in");
   }
 
   const { db } = await connectToDatabase();
-  const users = db.collection<User>("users");
   const analyses = db.collection<Analysis>("analyses");
   const documents = db.collection<Document>("documents");
   const clausesCol = db.collection<Clause>("clauses");
   const riskCategoriesCol = db.collection<RiskCategory>("riskCategories");
-
-  // Fetch user
-  const dbUser = await users.findOne({ clerkId: user.id });
-  if (!dbUser) {
-    redirect("/dashboard");
-  }
 
   let analysis = null;
 
@@ -45,7 +39,9 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
   const analysisId = analysis._id!.toString();
 
   // Fetch document
-  const document = await documents.findOne({ _id: new ObjectId(analysis.documentId) });
+  const document = ObjectId.isValid(String(analysis.documentId))
+    ? await documents.findOne({ _id: new ObjectId(String(analysis.documentId)) })
+    : null;
   if (!document || document.userId !== dbUser._id!.toString()) {
     redirect("/dashboard");
   }

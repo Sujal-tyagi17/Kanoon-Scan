@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { logAuditEvent } from "@/lib/db/audit";
-import { User, Document } from "@/types/db";
+import { Document } from "@/types/db";
 import { ObjectId } from "mongodb";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const user = await getOrCreateDbUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { documentId } = await req.json();
-    if (!documentId) {
+    if (!documentId || !ObjectId.isValid(documentId)) {
       return NextResponse.json(
         { error: "Document ID is required" },
         { status: 400 }
@@ -21,17 +21,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { db } = await connectToDatabase();
-    const users = db.collection<User>("users");
     const documents = db.collection<Document>("documents");
     const analyses = db.collection("analyses");
     const clauses = db.collection("clauses");
     const riskCategories = db.collection("riskCategories");
+    const chats = db.collection("chats");
 
-    // 1. Verify user exists
-    const user = await users.findOne({ clerkId: userId });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // 2. Verify document ownership
     const docObjectId = new ObjectId(documentId);
@@ -51,6 +46,7 @@ export async function POST(req: NextRequest) {
       const analysisId = analysis._id.toString();
       await clauses.deleteMany({ analysisId });
       await riskCategories.deleteMany({ analysisId });
+      await chats.deleteMany({ analysisId });
     }
 
     // 5. Delete analysis itself

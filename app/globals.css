@@ -57,12 +57,41 @@
     @apply border-border;
   }
   body {
-    @apply bg-[#080600] text-foreground;
+    @apply bg-[#080600] text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
+  .hairline-gold {
+    border: 1px solid rgba(255, 200, 128, 0.25);
+  }
+
+  .glass-vault {
+    background: linear-gradient(160deg, rgba(35, 32, 15, 0.75), rgba(17, 14, 2, 0.75));
+    backdrop-filter: blur(16px);
+  }
+
+  .step-connector {
+    background: linear-gradient(90deg, transparent, #ffc880, transparent);
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary-container to-primary text-[#452b00] font-bold text-sm shadow-lg transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-ring;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-primary/40 text-primary font-semibold text-sm transition-all hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed focus-ring;
+  }
+
+  .field {
+    @apply w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 text-sm text-on-surface placeholder:text-outline outline-none transition-all focus:ring-1 focus:ring-primary focus:border-primary;
+  }
+
   .glass-nav {
     background: rgba(8, 6, 0, 0.7);
     backdrop-filter: blur(20px);
@@ -156,3 +185,12 @@
   }
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

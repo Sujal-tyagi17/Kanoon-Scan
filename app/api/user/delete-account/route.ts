@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { User, Document, Analysis, Clause, RiskCategory, Chat, AuditLog } from "@/types/db";
-import { ObjectId } from "mongodb";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const user = await getOrCreateDbUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -20,11 +20,6 @@ export async function POST(req: NextRequest) {
     const chats = db.collection<Chat>("chats");
     const auditLogs = db.collection<AuditLog>("audit_logs");
 
-    // Find user record in MongoDB
-    const user = await users.findOne({ clerkId: userId });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     const userObjectId = user._id!.toString();
 
@@ -56,6 +51,17 @@ export async function POST(req: NextRequest) {
 
     // 7. Delete user profile record
     await users.deleteOne({ _id: user._id });
+
+    // 8. Delete the Clerk identity too, so the login itself is gone (not just app data)
+    try {
+      await clerkClient().users.deleteUser(user.clerkId);
+    } catch (clerkError) {
+      console.error("Failed to delete Clerk user:", clerkError);
+      return NextResponse.json(
+        { error: "Your data was deleted, but we couldn't remove your login. Please try again or contact support." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

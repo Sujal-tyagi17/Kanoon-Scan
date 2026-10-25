@@ -59,6 +59,11 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
+      afterSignOutUrl="/"
       appearance={{
         baseTheme: undefined,
         variables: {
@@ -68,6 +73,9 @@ export default function RootLayout({
           colorTextSecondary: "#d7c3ae",
           colorInputBackground: "#1f1c0b",
           colorInputText: "#eae2c8",
+          colorDanger: "#ffb4ab",
+          borderRadius: "0.5rem",
+          fontFamily: "var(--font-inter), Inter, sans-serif",
         },
         elements: {
           card: "border border-outline-variant/30 shadow-2xl bg-surface-container",
@@ -85,7 +93,7 @@ export default function RootLayout({
       <html lang="en" className={`dark ${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable}`}>
         <head>
           <link
-            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
             rel="stylesheet"
           />
         </head>

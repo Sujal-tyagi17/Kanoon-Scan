@@ -1,9 +1,13 @@
 import { MongoClient, Db } from "mongodb";
 
-const uri = process.env.DATABASE_URL;
-
-if (!uri) {
-  throw new Error("Please add your DATABASE_URL (MongoDB connection string) to .env or .env.local");
+// Checked lazily (inside connectToDatabase) so `next build` doesn't crash when env vars
+// are only available at runtime.
+function getUri() {
+  const uri = process.env.DATABASE_URL;
+  if (!uri) {
+    throw new Error("Please add your DATABASE_URL (MongoDB connection string) to .env or .env.local");
+  }
+  return uri;
 }
 
 interface MongoConnection {
@@ -30,7 +34,7 @@ export async function connectToDatabase(): Promise<MongoConnection> {
 
   if (!cachedConnection.promise) {
     const opts = {};
-    cachedConnection.promise = MongoClient.connect(uri!, opts).then((client) => {
+    cachedConnection.promise = MongoClient.connect(getUri(), opts).then((client) => {
       return {
         client,
         db: client.db(),
