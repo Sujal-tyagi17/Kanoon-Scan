@@ -32,6 +32,7 @@ function AnalyzingContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [legalTip] = useState(() => getRandomLegalTip());
 
   const startedRef = useRef(false);
@@ -60,6 +61,11 @@ function AnalyzingContent() {
 
       if (response.status === 401) {
         router.push(`/sign-in?redirect_url=${encodeURIComponent(`/scan/analyzing?documentId=${documentId}`)}`);
+        return;
+      }
+      if (response.status === 429) {
+        setLimitReached(true);
+        setError(data.error || "You've reached today's analysis limit.");
         return;
       }
       if (!response.ok || !data.analysisId) {
@@ -179,11 +185,17 @@ function AnalyzingContent() {
               </details>
             )}
             <div className="flex justify-center gap-3 mt-3">
-              <button onClick={() => setAttempt((a) => a + 1)} className="btn-primary !py-2">
-                <span className="material-symbols-outlined text-[18px]">refresh</span>
-                Try again
-              </button>
-              <Link href="/scan" className="btn-secondary !py-2">Scan another</Link>
+              {limitReached ? (
+                <Link href="/dashboard" className="btn-primary !py-2">Back to dashboard</Link>
+              ) : (
+                <>
+                  <button onClick={() => setAttempt((a) => a + 1)} className="btn-primary !py-2">
+                    <span className="material-symbols-outlined text-[18px]">refresh</span>
+                    Try again
+                  </button>
+                  <Link href="/scan" className="btn-secondary !py-2">Scan another</Link>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -113,6 +113,8 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
     positiveClauses: Array.isArray((analysis as any).positiveClauses) ? (analysis as any).positiveClauses : [],
     keyInformation: (analysis as any).keyInformation || {},
     confidenceScore: (analysis as any).confidenceScore || null,
+    shareToken: analysis.shareToken || null,
+    shareEnabled: !!analysis.shareEnabled,
   };
 
   return <AnalysisReportClient analysisData={analysisData} initialChat={chatHistory} />;
