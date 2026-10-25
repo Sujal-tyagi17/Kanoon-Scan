@@ -15,7 +15,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { analysisId, message } = await req.json();
+    const { analysisId, message, saveToHistory = true } = await req.json();
+
+    if (typeof message === "string" && message.length > 4000) {
+      return NextResponse.json({ error: "Message is too long (max 4000 characters)." }, { status: 400 });
+    }
 
     if (!analysisId || !ObjectId.isValid(analysisId) || !message || typeof message !== "string") {
       return NextResponse.json(
@@ -54,11 +58,10 @@ export async function POST(req: NextRequest) {
     // Fetch related clauses
     const clauses = await clausesCol.find({ analysisId }).toArray();
 
-    // Fetch last 10 chat messages for context
-    const recentChats = await chatsCol.find({ analysisId })
-      .sort({ createdAt: 1 })
-      .limit(10)
-      .toArray();
+    // Fetch the LAST 10 chat messages for context (newest first, then back to chronological)
+    const recentChats = (
+      await chatsCol.find({ analysisId }).sort({ createdAt: -1 }).limit(10).toArray()
+    ).reverse();
 
     // Build chat history
     const chatHistory = recentChats
@@ -82,21 +85,15 @@ export async function POST(req: NextRequest) {
       message
     );
 
-    // Save both messages to database
-    await chatsCol.insertMany([
-      {
-        analysisId: analysisId,
-        role: "USER",
-        message: message,
-        createdAt: new Date(),
-      },
-      {
-        analysisId: analysisId,
-        role: "ASSISTANT",
-        message: aiResponse,
-        createdAt: new Date(),
-      },
-    ]);
+    // Save both messages to history (skipped for one-off requests like clause drafts)
+    if (saveToHistory) {
+      const now = Date.now();
+      await chatsCol.insertMany([
+        { analysisId, role: "USER", message, createdAt: new Date(now) },
+        // +1ms keeps the pair in order when sorting by createdAt
+        { analysisId, role: "ASSISTANT", message: aiResponse, createdAt: new Date(now + 1) },
+      ]);
+    }
 
     return NextResponse.json({
       success: true,

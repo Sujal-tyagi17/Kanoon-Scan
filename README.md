@@ -73,15 +73,60 @@ An AI-powered Legal Contract Analyzer that helps users understand legal agreemen
 
 ---
 
+## 🚀 Getting Started
+
+```bash
+git clone https://github.com/Sujal-tyagi17/Kanoon-Scan.git
+cd Kanoon-Scan
+npm install
+cp .env.example .env.local   # fill in the values
+npm run dev
+```
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk authentication |
+| `DATABASE_URL` | MongoDB connection string (use the `mongodb+srv://` form, with a database name) |
+| `GROQ_API_KEY`, `GEMINI_API_KEY` | AI providers (at least one required) |
+| `ENCRYPTION_KEY` | Secret for encrypting document text at rest — set once, never change |
+| `WEBHOOK_SECRET` | Optional Clerk webhook secret |
+| `GROQ_MODELS`, `GEMINI_MODELS` | Optional comma-separated model overrides |
+
+`GET /api/health` reports which variables are set (yes/no only) and whether MongoDB is reachable.
+
+---
+
+## 🗄️ Database Schema
+
+MongoDB is schemaless, so the schema is enforced with `$jsonSchema` validators and indexes defined in [`lib/db/schema.ts`](lib/db/schema.ts). They are applied automatically on the first connection; you can also run [`scripts/mongo-schema.js`](scripts/mongo-schema.js) in mongosh.
+
+| Collection | Key fields | Indexes |
+|------------|-----------|---------|
+| `users` | clerkId, email, name | clerkId (unique) |
+| `documents` | userId, name, type, rawText (encrypted), status | userId + createdAt |
+| `analyses` | documentId, riskScore (0–100), riskLevel, summary, verdict, keyInformation | documentId (unique) |
+| `clauses` | analysisId, title, originalText, riskLevel, suggestion, isSaved | analysisId + position |
+| `riskCategories` | analysisId, name, score, level | analysisId |
+| `chats` | analysisId, role (USER/ASSISTANT), message | analysisId + createdAt |
+| `audit_logs` | userId, action, details | userId + createdAt |
+
+---
+
 ## 📁 Project Structure
 
 ```text
 app/
-components/
+  (auth)/           sign-in & sign-up pages (Clerk)
+  (dashboard)/      dashboard, scan, vault, analysis report, settings
+  api/              analyze, chat, documents, webhooks, health
+components/         UI (landing, dashboard shell, uploader, dialogs)
 lib/
-actions/
-models/
-public/
+  auth.ts           get-or-create the MongoDB user for the Clerk session
+  db/               connection, schema validators, audit log
+  groq/analyze.ts   AI analysis with Groq → Gemini fallback chain
+  gemini/           document chat
+  encryption.ts     AES-256 encryption of document text
+scripts/            mongosh schema script
 ```
 
 ---

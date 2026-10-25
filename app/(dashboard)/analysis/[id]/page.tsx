@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
-import { Document, Analysis, Clause, RiskCategory } from "@/types/db";
+import { Document, Analysis, Clause, RiskCategory, Chat } from "@/types/db";
 import { ObjectId } from "mongodb";
 import AnalysisReportClient from "./AnalysisReportClient";
 
@@ -84,6 +84,11 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
   }));
 
   const categories = await riskCategoriesCol.find({ analysisId }).toArray();
+  const chatHistory = (
+    await db.collection<Chat>("chats").find({ analysisId }).sort({ createdAt: -1 }).limit(50).toArray()
+  )
+    .reverse()
+    .map((c) => ({ role: c.role, message: c.message }));
   const formattedCategories = categories.map(c => ({
     id: c._id!.toString(),
     analysisId: c.analysisId,
@@ -110,5 +115,5 @@ export default async function AnalysisPage({ params }: { params: { id: string } 
     confidenceScore: (analysis as any).confidenceScore || null,
   };
 
-  return <AnalysisReportClient analysisData={analysisData} />;
+  return <AnalysisReportClient analysisData={analysisData} initialChat={chatHistory} />;
 }

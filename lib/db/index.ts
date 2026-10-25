@@ -1,4 +1,5 @@
 import { MongoClient, Db } from "mongodb";
+import { applySchema } from "./schema";
 
 // Checked lazily (inside connectToDatabase) so `next build` doesn't crash when env vars
 // are only available at runtime.
@@ -34,11 +35,11 @@ export async function connectToDatabase(): Promise<MongoConnection> {
 
   if (!cachedConnection.promise) {
     const opts = {};
-    cachedConnection.promise = MongoClient.connect(getUri(), opts).then((client) => {
-      return {
-        client,
-        db: client.db(),
-      };
+    cachedConnection.promise = MongoClient.connect(getUri(), opts).then(async (client) => {
+      const db = client.db();
+      // Apply validators + indexes once per server instance (idempotent, never throws)
+      await applySchema(db).catch((e) => console.warn("[schema] setup skipped:", e?.message));
+      return { client, db };
     });
   }
 

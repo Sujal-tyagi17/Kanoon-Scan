@@ -78,16 +78,16 @@ export async function POST(req: NextRequest) {
     try {
       const analysisInsertResult = await analyses.insertOne({
         documentId: document._id!.toString(),
-        riskScore: (typeof analysisResult.riskScore === 'number' && !isNaN(analysisResult.riskScore)) ? analysisResult.riskScore : 50,
+        riskScore: (typeof analysisResult.riskScore === 'number' && !isNaN(analysisResult.riskScore)) ? Math.min(100, Math.max(0, Math.round(analysisResult.riskScore))) : 50,
         riskLevel: analysisResult.riskLevel || 'MEDIUM',
-        summary: analysisResult.summary || 'Summary unavailable.',
+        summary: String(analysisResult.summary || 'Summary unavailable.'),
         plainEnglish: plainEnglishText || 'Plain English explanation unavailable.',
         createdAt: new Date(),
         // New Extended Legal AI fields (Feature 1, 2, 3, 4) saved backward-compatibly
-        overallVerdict: analysisResult.overallVerdict || null,
-        positiveClauses: Array.isArray(analysisResult.positiveClauses) ? analysisResult.positiveClauses : [],
-        keyInformation: analysisResult.keyInformation || {},
-        confidenceScore: analysisResult.confidenceScore || null,
+        overallVerdict: analysisResult.overallVerdict && typeof analysisResult.overallVerdict === 'object' && !Array.isArray(analysisResult.overallVerdict) ? analysisResult.overallVerdict : null,
+        positiveClauses: Array.isArray(analysisResult.positiveClauses) ? analysisResult.positiveClauses.map((p: any) => String(p)) : [],
+        keyInformation: analysisResult.keyInformation && typeof analysisResult.keyInformation === 'object' && !Array.isArray(analysisResult.keyInformation) ? analysisResult.keyInformation : {},
+        confidenceScore: analysisResult.confidenceScore != null ? String(analysisResult.confidenceScore) : null,
       });
       analysisId = analysisInsertResult.insertedId.toString();
     } catch (insertError: any) {
