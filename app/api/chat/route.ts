@@ -6,6 +6,8 @@ import { chatWithDocument } from "@/lib/gemini/chat";
 import { Analysis, Document, Clause, Chat } from "@/types/db";
 import { ObjectId } from "mongodb";
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const dbUser = await getOrCreateDbUser();

@@ -57,6 +57,8 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
   }
 }
 
+export const maxDuration = 30;
+
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
 

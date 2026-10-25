@@ -7,6 +7,9 @@ import { analyzeDocument } from "@/lib/groq/analyze";
 import { Document, Analysis, Clause, RiskCategory } from "@/types/db";
 import { ObjectId } from "mongodb";
 
+// AI analysis can take a while on long contracts
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
   
@@ -166,8 +169,13 @@ export async function POST(req: NextRequest) {
       ).catch(console.error);
     }
     
+    // Short, non-sensitive reason so the UI (and you) can see what went wrong
+    const details: string[] = (error as any)?.details || [];
+    const reason = details.length
+      ? details.map((d) => d.split(": ").slice(0, 2).join(": ").slice(0, 120)).join(" | ")
+      : (error as any)?.message;
     return NextResponse.json(
-      { error: "Failed to analyze document" },
+      { error: "The AI couldn't analyse this document. Please try again.", reason },
       { status: 500 }
     );
   }
