@@ -31,6 +31,16 @@ function modelList(envVar: string, defaults: string[]) {
   return list.length ? list : defaults;
 }
 
+/** Maps the model's occasional custom labels (MINOR, SEVERE, MODERATE...) onto our four levels. */
+function normaliseLevel(level: unknown): string {
+  const l = String(level || "").trim().toUpperCase();
+  if (["CRITICAL", "SEVERE", "VERY HIGH", "EXTREME"].includes(l)) return "CRITICAL";
+  if (["HIGH", "MAJOR"].includes(l)) return "HIGH";
+  if (["MEDIUM", "MODERATE", "CAUTION", "WARNING"].includes(l)) return "MEDIUM";
+  if (["LOW", "MINOR", "NONE", "SAFE", "INFO", "MINIMAL"].includes(l)) return "LOW";
+  return "MEDIUM";
+}
+
 function parseModelJson(raw: string): GeminiAnalysisResponse {
   let text = raw.trim();
   // Strip markdown fences if the model added them
@@ -45,6 +55,15 @@ function parseModelJson(raw: string): GeminiAnalysisResponse {
   if (typeof parsed.riskScore === "string") parsed.riskScore = Number(parsed.riskScore);
   parsed.categories = Array.isArray(parsed.categories) ? parsed.categories : [];
   parsed.clauses = Array.isArray(parsed.clauses) ? parsed.clauses : [];
+  parsed.riskLevel = normaliseLevel(parsed.riskLevel);
+  for (const c of parsed.clauses) {
+    c.riskLevel = normaliseLevel(c.riskLevel);
+    c.severity = normaliseLevel(c.severity || c.riskLevel);
+  }
+  for (const c of parsed.categories) {
+    if (c.riskLevel) c.riskLevel = normaliseLevel(c.riskLevel);
+    if (c.level) c.level = normaliseLevel(c.level);
+  }
   if (!parsed.summary && parsed.clauses.length === 0) throw new Error("Response had no summary or clauses");
   return parsed as GeminiAnalysisResponse;
 }
@@ -54,7 +73,7 @@ async function tryGroq(model: string, documentText: string) {
     model,
     messages: [{ role: "user", content: ANALYSIS_PROMPT(documentText.slice(0, GROQ_MAX_CHARS)) }],
     temperature: 0.3,
-    max_tokens: 6000,
+    max_tokens: 8000,
     response_format: { type: "json_object" },
   });
   const content = completion.choices[0]?.message?.content || "";
@@ -228,10 +247,19 @@ Provide your analysis in the following JSON structure:
       "category": "<the category this belongs to>",
       "whoBenefits": "<who benefits from this clause>",
       "whoIsAtRisk": "<who is at risk from this clause>",
-      "severity": "<MINOR|MEDIUM|HIGH|CRITICAL>"
+      "severity": "<LOW|MEDIUM|HIGH|CRITICAL>"
     }
   ]
 }
+
+=== CLAUSE COVERAGE (MANDATORY) ===
+1. The "clauses" array MUST contain EVERY clause in the document whose risk is MEDIUM, HIGH or CRITICAL. Never stop early and never omit one — go through the document from start to end before finishing.
+2. If a numbered section contains several sub-clauses with different risks (e.g. 9.1 is fair but 9.2 and 9.3 are one-sided), report the risky sub-clauses as separate entries.
+3. LOW-risk clauses are optional: include at most 4 of the most relevant ones, after all the risky ones.
+4. Order the array by risk: CRITICAL first, then HIGH, then MEDIUM, then LOW.
+5. Keep "originalText" to the exact sentence(s) that create the risk (under ~400 characters), so the full list fits in the response.
+6. Every risk category you list in "categories" with HIGH or CRITICAL level must be backed by at least one entry in "clauses".
+7. "riskLevel" and "severity" must use only LOW, MEDIUM, HIGH or CRITICAL.
 
 Return ONLY valid JSON, no additional markdown wrapper.`;
 }
