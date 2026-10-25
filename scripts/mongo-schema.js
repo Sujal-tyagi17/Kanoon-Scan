@@ -389,9 +389,20 @@ for (const [name, { validator, indexes }] of Object.entries(COLLECTIONS)) {
   } else {
     db.createCollection(name, { validator, validationLevel: "moderate", validationAction: "error" });
   }
+  const col = db.getCollection(name);
+  const current = col.getIndexes();
   for (const idx of indexes) {
     const { key, ...opts } = idx;
-    db.getCollection(name).createIndex(key, opts);
+    const match = current.find((e) => JSON.stringify(e.key) === JSON.stringify(key));
+    if (match && !!match.unique === !!opts.unique) {
+      print("  = " + name + "." + match.name + " already exists");
+      continue;
+    }
+    if (match) {
+      print("  ~ replacing " + name + "." + match.name + " with " + opts.name);
+      col.dropIndex(match.name);
+    }
+    col.createIndex(key, opts);
   }
   print("✔ " + name);
 }

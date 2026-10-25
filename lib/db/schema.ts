@@ -179,6 +179,71 @@ export const COLLECTIONS: Record<string, { validator: object; indexes: IndexDesc
   },
 };
 
+const sameKey = (a: object, b: object) => JSON.stringify(a) === JSON.stringify(b);
+const sameJson = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * Ensures each index exists, one at a time, matching indexes by KEY rather than
+ * name. An existing index with the same key and options is kept as-is (whatever
+ * it's called). One with the same key but different options (e.g. not unique)
+ * is replaced; if the replacement can't be built (e.g. duplicate data), the
+ * original is restored and a warning is logged.
+ */
+async function ensureIndexes(db: Db, name: string, indexes: IndexDescription[]) {
+  const col = db.collection(name);
+  let existing: any[] = [];
+  try {
+    existing = await col.indexes();
+  } catch {
+    // collection may not exist yet; createIndex will create it
+  }
+
+  for (const idx of indexes) {
+    const { key, ...opts } = idx as any;
+    const match = existing.find((e) => sameKey(e.key, key));
+    try {
+      if (!match) {
+        await col.createIndex(key, opts);
+        continue;
+      }
+      const compatible =
+        !!match.unique === !!opts.unique &&
+        sameJson(match.partialFilterExpression, opts.partialFilterExpression) &&
+        sameJson(match.expireAfterSeconds, opts.expireAfterSeconds);
+      if (compatible) continue;
+
+      // Don't drop a working index if a unique version can't be built anyway
+      if (opts.unique && !match.unique) {
+        const groupId = Object.fromEntries(Object.keys(key).map((f) => [f, `$${f}`]));
+        const dupes = await col
+          .aggregate([
+            ...(opts.partialFilterExpression ? [{ $match: opts.partialFilterExpression }] : []),
+            { $group: { _id: groupId, n: { $sum: 1 } } },
+            { $match: { n: { $gt: 1 } } },
+            { $limit: 1 },
+          ])
+          .toArray();
+        if (dupes.length) {
+          console.warn(`[schema] ${name} has duplicate ${Object.keys(key).join("+")} values; keeping non-unique ${match.name}`);
+          continue;
+        }
+      }
+
+      await col.dropIndex(match.name);
+      try {
+        await col.createIndex(key, opts);
+        console.info(`[schema] replaced index ${name}.${match.name} with ${opts.name}`);
+      } catch (e: any) {
+        const { v, key: k, name: n, ns, ...oldOpts } = match;
+        await col.createIndex(k, { name: n, ...oldOpts });
+        console.warn(`[schema] kept existing ${name}.${n}; could not apply ${opts.name}: ${e?.message}`);
+      }
+    } catch (e: any) {
+      console.warn(`[schema] index ${name}.${opts.name}: ${e?.message}`);
+    }
+  }
+}
+
 /**
  * Creates collections with validators, or updates validators on existing ones,
  * and ensures indexes. Idempotent and never throws: a missing permission or a
@@ -197,10 +262,6 @@ export async function applySchema(db: Db) {
     } catch (e: any) {
       console.warn(`[schema] could not apply validator to ${name}: ${e?.message}`);
     }
-    try {
-      if (indexes.length) await db.collection(name).createIndexes(indexes);
-    } catch (e: any) {
-      console.warn(`[schema] could not create indexes on ${name}: ${e?.message}`);
-    }
+    await ensureIndexes(db, name, indexes);
   }
 }
