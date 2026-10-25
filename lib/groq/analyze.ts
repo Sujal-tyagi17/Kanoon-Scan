@@ -1,170 +1,152 @@
 import Groq from "groq-sdk";
 import type { GeminiAnalysisResponse } from "@/types";
 
-// Created lazily so a missing key doesn't crash `next build` / module import.
+/**
+ * Contract analysis with a provider fallback chain.
+ *
+ * Each model is tried in order; ANY failure (rate limit, request too large,
+ * model retired, bad JSON...) moves on to the next one. Model names can be
+ * overridden with env vars so a retired model never needs a code change:
+ *   GROQ_MODELS   = comma-separated Groq model ids
+ *   GEMINI_MODELS = comma-separated Gemini model ids
+ */
+
+const DEFAULT_GROQ_MODELS = ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "llama-3.1-8b-instant"];
+const DEFAULT_GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+// Groq's free tier has small per-minute token limits, so very long documents
+// go to Gemini (large context window) first.
+const GROQ_MAX_CHARS = 20_000;
+const GEMINI_MAX_CHARS = 400_000;
+
 let groqClient: Groq | null = null;
 function getGroq() {
-  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY, maxRetries: 0, timeout: 45_000 });
   return groqClient;
 }
 
-export async function analyzeDocument(
-  documentText: string
-): Promise<GeminiAnalysisResponse> {
-  let chatCompletion;
-  let useGeminiFallback = false;
+function modelList(envVar: string, defaults: string[]) {
+  const raw = process.env[envVar];
+  const list = raw ? raw.split(",").map((m) => m.trim()).filter(Boolean) : [];
+  return list.length ? list : defaults;
+}
 
-  try {
-    chatCompletion = await getGroq().chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: ANALYSIS_PROMPT(documentText),
-        },
-      ],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.3,
-      max_tokens: 4000,
-      response_format: { type: "json_object" },
-    });
-  } catch (primaryError: any) {
-    const isRateLimit = primaryError?.status === 429 || 
-                        (primaryError?.message && primaryError.message.toLowerCase().includes("rate_limit"));
-                        
-    if (isRateLimit) {
-      console.warn("Llama-3.3 rate limit hit. Trying fallback model llama-3.1-8b-instant...");
-      try {
-        chatCompletion = await getGroq().chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: ANALYSIS_PROMPT(documentText),
-            },
-          ],
-          model: "llama-3.1-8b-instant",
-          temperature: 0.3,
-          max_tokens: 4000,
-          response_format: { type: "json_object" },
-        });
-      } catch (fallbackError) {
-        console.warn("Error with fallback model llama-3.1-8b-instant. Trying mixtral-8x7b-32768...");
-        try {
-          chatCompletion = await getGroq().chat.completions.create({
-            messages: [
-              {
-                role: "user",
-                content: ANALYSIS_PROMPT(documentText),
-              },
-            ],
-            model: "mixtral-8x7b-32768",
-            temperature: 0.3,
-            max_tokens: 4000,
-            response_format: { type: "json_object" },
-          });
-        } catch (tertiaryError) {
-          console.warn("All Groq models exhausted. Activating direct Google Gemini API Failover...");
-          useGeminiFallback = true;
-        }
-      }
-    } else {
-      console.warn("Groq request failed with non-rate-limit error. Activating direct Google Gemini API Failover...");
-      useGeminiFallback = true;
+/** Maps the model's occasional custom labels (MINOR, SEVERE, MODERATE...) onto our four levels. */
+function normaliseLevel(level: unknown): string {
+  const l = String(level || "").trim().toUpperCase();
+  if (["CRITICAL", "SEVERE", "VERY HIGH", "EXTREME"].includes(l)) return "CRITICAL";
+  if (["HIGH", "MAJOR"].includes(l)) return "HIGH";
+  if (["MEDIUM", "MODERATE", "CAUTION", "WARNING"].includes(l)) return "MEDIUM";
+  if (["LOW", "MINOR", "NONE", "SAFE", "INFO", "MINIMAL"].includes(l)) return "LOW";
+  return "MEDIUM";
+}
+
+function parseModelJson(raw: string): GeminiAnalysisResponse {
+  let text = raw.trim();
+  // Strip markdown fences if the model added them
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  // If there's leading/trailing chatter, cut to the outermost JSON object
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start > 0 || (end !== -1 && end < text.length - 1)) text = text.slice(start, end + 1);
+
+  const parsed = JSON.parse(text);
+  if (typeof parsed !== "object" || parsed === null) throw new Error("Response was not a JSON object");
+  if (typeof parsed.riskScore === "string") parsed.riskScore = Number(parsed.riskScore);
+  parsed.categories = Array.isArray(parsed.categories) ? parsed.categories : [];
+  parsed.clauses = Array.isArray(parsed.clauses) ? parsed.clauses : [];
+  parsed.riskLevel = normaliseLevel(parsed.riskLevel);
+  for (const c of parsed.clauses) {
+    c.riskLevel = normaliseLevel(c.riskLevel);
+    c.severity = normaliseLevel(c.severity || c.riskLevel);
+  }
+  for (const c of parsed.categories) {
+    if (c.riskLevel) c.riskLevel = normaliseLevel(c.riskLevel);
+    if (c.level) c.level = normaliseLevel(c.level);
+  }
+  if (!parsed.summary && parsed.clauses.length === 0) throw new Error("Response had no summary or clauses");
+  return parsed as GeminiAnalysisResponse;
+}
+
+async function tryGroq(model: string, documentText: string) {
+  const completion = await getGroq().chat.completions.create({
+    model,
+    messages: [{ role: "user", content: ANALYSIS_PROMPT(documentText.slice(0, GROQ_MAX_CHARS)) }],
+    temperature: 0.3,
+    max_tokens: 8000,
+    response_format: { type: "json_object" },
+  });
+  const content = completion.choices[0]?.message?.content || "";
+  if (!content) throw new Error("empty response");
+  return parseModelJson(content);
+}
+
+async function tryGemini(model: string, documentText: string) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Key in a header, not the URL, so it never shows up in logs
+        "x-goog-api-key": process.env.GEMINI_API_KEY || "",
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: ANALYSIS_PROMPT(documentText.slice(0, GEMINI_MAX_CHARS)) }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: 16384 },
+      }),
+      signal: AbortSignal.timeout(50_000),
     }
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const text = (data.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("");
+  if (!text) throw new Error(`empty response (finishReason: ${data.candidates?.[0]?.finishReason || "unknown"})`);
+  return parseModelJson(text);
+}
+
+function describe(err: any) {
+  const status = err?.status ? `HTTP ${err.status} ` : "";
+  return `${status}${String(err?.message || err).slice(0, 200)}`;
+}
+
+export async function analyzeDocument(documentText: string): Promise<GeminiAnalysisResponse> {
+  const attempts: { label: string; run: () => Promise<GeminiAnalysisResponse> }[] = [];
+
+  const groq = process.env.GROQ_API_KEY
+    ? modelList("GROQ_MODELS", DEFAULT_GROQ_MODELS).map((m) => ({ label: `groq:${m}`, run: () => tryGroq(m, documentText) }))
+    : [];
+  const gemini = process.env.GEMINI_API_KEY
+    ? modelList("GEMINI_MODELS", DEFAULT_GEMINI_MODELS).map((m) => ({ label: `gemini:${m}`, run: () => tryGemini(m, documentText) }))
+    : [];
+
+  if (documentText.length > GROQ_MAX_CHARS) attempts.push(...gemini, ...groq);
+  else attempts.push(...groq, ...gemini);
+
+  if (attempts.length === 0) {
+    throw new Error("No AI provider is configured. Set GROQ_API_KEY and/or GEMINI_API_KEY.");
   }
 
-  // Google Gemini API Failover Implementation
-  if (useGeminiFallback) {
+  const failures: string[] = [];
+  for (const attempt of attempts) {
     try {
-      const geminiKey = process.env.GEMINI_API_KEY;
-      if (!geminiKey) {
-        throw new Error("GEMINI_API_KEY is not defined in the environment variables.");
-      }
-
-      console.info("Executing contract analysis with Google Gemini (gemini-1.5-flash)...");
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: ANALYSIS_PROMPT(documentText),
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              response_mime_type: "application/json",
-              temperature: 0.3,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API responded with status ${response.status}: ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      const rawText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      if (!rawText) {
-        throw new Error("Empty text returned from Gemini API");
-      }
-
-      const parsedResponse = JSON.parse(rawText.trim());
-      parsedResponse.categories = Array.isArray(parsedResponse.categories) ? parsedResponse.categories : [];
-      parsedResponse.clauses = Array.isArray(parsedResponse.clauses) ? parsedResponse.clauses : [];
-      return parsedResponse as GeminiAnalysisResponse;
-    } catch (geminiError) {
-      console.error("Critical: Google Gemini failover also failed:", geminiError);
-      throw new Error("AI analysis engines are currently rate-limited. Please try again later.");
+      const result = await attempt.run();
+      console.info(`Contract analysis succeeded with ${attempt.label}`);
+      return result;
+    } catch (err) {
+      const msg = `${attempt.label} failed: ${describe(err)}`;
+      console.warn(msg);
+      failures.push(msg);
     }
   }
 
-  try {
-    if (!chatCompletion) {
-      throw new Error("Groq API completion returned undefined");
-    }
-    const responseText = chatCompletion.choices[0]?.message?.content || "";
-
-    if (!responseText) {
-      throw new Error("Empty response from Groq API");
-    }
-
-    // Remove markdown code blocks if present
-    let cleanedText = responseText.trim();
-    if (cleanedText.startsWith("```json")) {
-      cleanedText = cleanedText.slice(7);
-    }
-    if (cleanedText.startsWith("```")) {
-      cleanedText = cleanedText.slice(3);
-    }
-    if (cleanedText.endsWith("```")) {
-      cleanedText = cleanedText.slice(0, -3);
-    }
-
-    const parsedResponse = JSON.parse(cleanedText.trim());
-
-    // Validate response structure (loose check, rely on fallbacks in route.ts)
-    if (typeof parsedResponse !== "object" || parsedResponse === null) {
-      throw new Error("Invalid response structure from Groq API");
-    }
-    
-    // Ensure arrays exist so .map() doesn't crash later
-    parsedResponse.categories = Array.isArray(parsedResponse.categories) ? parsedResponse.categories : [];
-    parsedResponse.clauses = Array.isArray(parsedResponse.clauses) ? parsedResponse.clauses : [];
-
-    return parsedResponse as GeminiAnalysisResponse;
-  } catch (error) {
-    console.error("Error analyzing document with Groq:", error);
-    throw new Error("Failed to analyze document. Please try again.");
-  }
+  console.error("All AI providers failed:\n" + failures.join("\n"));
+  const err = new Error("All AI models failed to analyse this document.");
+  (err as any).details = failures;
+  throw err;
 }
 
 function ANALYSIS_PROMPT(documentText: string): string {
@@ -265,10 +247,19 @@ Provide your analysis in the following JSON structure:
       "category": "<the category this belongs to>",
       "whoBenefits": "<who benefits from this clause>",
       "whoIsAtRisk": "<who is at risk from this clause>",
-      "severity": "<MINOR|MEDIUM|HIGH|CRITICAL>"
+      "severity": "<LOW|MEDIUM|HIGH|CRITICAL>"
     }
   ]
 }
+
+=== CLAUSE COVERAGE (MANDATORY) ===
+1. The "clauses" array MUST contain EVERY clause in the document whose risk is MEDIUM, HIGH or CRITICAL. Never stop early and never omit one — go through the document from start to end before finishing.
+2. If a numbered section contains several sub-clauses with different risks (e.g. 9.1 is fair but 9.2 and 9.3 are one-sided), report the risky sub-clauses as separate entries.
+3. LOW-risk clauses are optional: include at most 4 of the most relevant ones, after all the risky ones.
+4. Order the array by risk: CRITICAL first, then HIGH, then MEDIUM, then LOW.
+5. Keep "originalText" to the exact sentence(s) that create the risk (under ~400 characters), so the full list fits in the response.
+6. Every risk category you list in "categories" with HIGH or CRITICAL level must be backed by at least one entry in "clauses".
+7. "riskLevel" and "severity" must use only LOW, MEDIUM, HIGH or CRITICAL.
 
 Return ONLY valid JSON, no additional markdown wrapper.`;
 }

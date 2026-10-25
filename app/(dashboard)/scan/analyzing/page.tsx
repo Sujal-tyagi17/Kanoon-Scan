@@ -31,6 +31,7 @@ function AnalyzingContent() {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [legalTip] = useState(() => getRandomLegalTip());
 
   const startedRef = useRef(false);
@@ -39,6 +40,7 @@ function AnalyzingContent() {
   const runAnalysis = useCallback(async () => {
     if (!documentId) return;
     setError(null);
+    setErrorDetail(null);
     setProgress(30);
     setCurrentStep(2);
 
@@ -61,6 +63,7 @@ function AnalyzingContent() {
         return;
       }
       if (!response.ok || !data.analysisId) {
+        if (data.reason) setErrorDetail(String(data.reason));
         throw new Error(
           response.status === 404
             ? "We couldn't find this document. It may have been deleted."
@@ -169,6 +172,12 @@ function AnalyzingContent() {
           <div className="w-full max-w-md mb-4 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm text-center shrink-0">
             <span className="material-symbols-outlined text-base mr-2 align-middle">error</span>
             {error}
+            {errorDetail && (
+              <details className="mt-2 text-left text-[11px] text-on-surface-variant">
+                <summary className="cursor-pointer text-center">Technical details</summary>
+                <p className="mt-1 font-data-mono break-words">{errorDetail}</p>
+              </details>
+            )}
             <div className="flex justify-center gap-3 mt-3">
               <button onClick={() => setAttempt((a) => a + 1)} className="btn-primary !py-2">
                 <span className="material-symbols-outlined text-[18px]">refresh</span>

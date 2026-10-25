@@ -7,43 +7,20 @@ import { User, Document } from "@/types/db";
 import { ObjectId } from "mongodb";
 import mammoth from "mammoth";
 
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-import { pathToFileURL } from "url";
+import { extractText, getDocumentProxy } from "unpdf";
 
-// Bind the legacy CJS worker directly to pdfjsLib instance to resolve Node.js mock tasks
-if (typeof window === "undefined") {
-  const absolutePath = require("path").join(
-    process.cwd(),
-    "node_modules",
-    "pdfjs-dist",
-    "legacy",
-    "build",
-    "pdf.worker.mjs"
-  );
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(absolutePath).toString();
-} else {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-}
-
+// unpdf ships a serverless build of pdf.js (no worker file), which works on Vercel.
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    const uint8Array = new Uint8Array(buffer);
-    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
-    const pdf = await loadingTask.promise;
-    
-    let fullText = "";
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(" ");
-      fullText += pageText + "\n";
-    }
-    return fullText.trim();
-  } catch (error) {
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const { text } = await extractText(pdf, { mergePages: false });
+    return (Array.isArray(text) ? text.join("\n\n") : String(text)).trim();
+  } catch (error: any) {
     console.error("Error extracting PDF text:", error);
-    throw new Error("Failed to extract text from PDF");
+    if (error?.name === "PasswordException") {
+      throw new Error("This PDF is password-protected. Remove the password and upload it again.");
+    }
+    throw new Error("Couldn't read this PDF. If it's a scanned image, paste the text instead.");
   }
 }
 
@@ -56,6 +33,8 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
     throw new Error("Failed to extract text from DOCX");
   }
 }
+
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
