@@ -16,6 +16,15 @@ type AnalysisWithRelations = Analysis & {
   confidenceScore?: string | null;
 };
 
+// Escape model/document text before writing it into the printable report window.
+const esc = (v: unknown) =>
+  String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 export default function AnalysisReportClient({ analysisData }: { analysisData: AnalysisWithRelations }) {
   // Sort state
   const [sortBy, setSortBy] = useState<"Risk Level" | "Clause Order">("Risk Level");
@@ -149,12 +158,12 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
       return `
         <tr>
           <td style="padding:10px;border-bottom:1px solid #eee;">${i + 1}</td>
-          <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;">${c.title}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;">${esc(c.title)}</td>
           <td style="padding:10px;border-bottom:1px solid #eee;">
-            <span style="background:${riskColor(c.riskLevel)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${c.riskLevel}</span>
+            <span style="background:${riskColor(c.riskLevel)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${esc(c.riskLevel)}</span>
           </td>
-          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${c.explanation || ""}</td>
-          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;font-style:italic;color:#555;">${c.suggestion || "—"}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;">${esc(c.explanation)}</td>
+          <td style="padding:10px;border-bottom:1px solid #eee;font-size:13px;font-style:italic;color:#555;">${esc(c.suggestion || "—")}</td>
         </tr>
       `;
     }).join("");
@@ -163,9 +172,9 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
       const textColor = cat.level === "MEDIUM" ? "#3f2b00" : "#ffffff";
       return `
         <tr>
-          <td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;">${cat.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;font-weight:500;">${esc(cat.name)}</td>
           <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">
-            <span style="background:${riskColor(cat.level)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${cat.level}</span>
+            <span style="background:${riskColor(cat.level)};color:${textColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${esc(cat.level)}</span>
           </td>
           <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;">${cat.score}/100</td>
         </tr>
@@ -174,15 +183,15 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
 
     const positiveClausesRows = (analysisData.positiveClauses && analysisData.positiveClauses.length > 0)
       ? analysisData.positiveClauses.map((c: string) => `
-        <li style="margin-bottom:6px;font-size:13px;color:#334155;">✔ ${c}</li>
+        <li style="margin-bottom:6px;font-size:13px;color:#334155;">✔ ${esc(c)}</li>
       `).join("")
       : `<p style="font-size:13px;color:#64748b;font-style:italic;">No significant protective clauses detected.</p>`;
 
     const keyInformationRows = (analysisData.keyInformation && Object.keys(analysisData.keyInformation).length > 0)
       ? Object.entries(analysisData.keyInformation).map(([key, val]: any) => `
         <tr>
-          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600;font-size:12px;color:#475569;">${key}</td>
-          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${val || "Not specified"}</td>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:600;font-size:12px;color:#475569;">${esc(key)}</td>
+          <td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${esc(val || "Not specified")}</td>
         </tr>
       `).join("")
       : "";
@@ -197,7 +206,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>KanoonScan Analysis Report - ${document.name}</title>
+  <title>KanoonScan Analysis Report - ${esc(document.name)}</title>
   <style>
     body { font-family: 'Segoe UI', system-ui, sans-serif; margin:0; padding:40px; color:#1a1a2e; background:#fff; }
     .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #b89855; padding-bottom:20px; margin-bottom:30px; }
@@ -222,25 +231,25 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
       <div style="font-size:13px;color:#64748b;margin-top:4px;">AI-Powered Legal Document Analysis Report</div>
     </div>
     <div class="meta">
-      <div><strong>Document:</strong> ${document.name}</div>
+      <div><strong>Document:</strong> ${esc(document.name)}</div>
       <div><strong>Analyzed:</strong> ${new Date(analysisData.createdAt).toLocaleDateString("en-IN", { year:"numeric", month:"long", day:"numeric" })}</div>
-      ${analysisData.confidenceScore ? `<div><strong>AI Confidence:</strong> ${analysisData.confidenceScore}</div>` : ""}
+      ${analysisData.confidenceScore ? `<div><strong>AI Confidence:</strong> ${esc(analysisData.confidenceScore)}</div>` : ""}
       <div style="margin-top:8px;"><span class="risk-badge" style="background:${finalScoreColor};color:${finalScoreTextColor};">Risk Score: ${analysisData.riskScore}/100</span></div>
     </div>
   </div>
 
   <h2>Executive Summary</h2>
-  <div class="summary-box">${analysisData.summary}</div>
+  <div class="summary-box">${esc(analysisData.summary)}</div>
 
   ${analysisData.overallVerdict ? `
     <h2>Overall Verdict</h2>
     <div class="summary-box" style="border-left: 4px solid ${finalScoreColor};">
-      <div style="font-weight: 800; font-size: 16px; margin-bottom: 8px;">${analysisData.overallVerdict.status}</div>
-      <div style="font-size: 14px; color: #334155;">${analysisData.overallVerdict.explanation}</div>
+      <div style="font-weight: 800; font-size: 16px; margin-bottom: 8px;">${esc(analysisData.overallVerdict.status)}</div>
+      <div style="font-size: 14px; color: #334155;">${esc(analysisData.overallVerdict.explanation)}</div>
     </div>
   ` : ""}
 
-  ${analysisData.plainEnglish ? `<h2>Plain English Translation</h2><div class="summary-box">${analysisData.plainEnglish}</div>` : ""}
+  ${analysisData.plainEnglish ? `<h2>Plain English Translation</h2><div class="summary-box">${esc(analysisData.plainEnglish)}</div>` : ""}
 
   ${positiveClausesRows ? `
     <h2>Positive Clauses</h2>
@@ -405,9 +414,9 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
   const highRiskCount = clauses.filter((c) => c.riskLevel === "HIGH" || c.riskLevel === "CRITICAL").length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-on-background">
+    <div className="min-h-screen lg:h-screen flex flex-col bg-background text-on-background">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-outline-variant px-8 py-3 bg-background sticky top-0 z-50 relative">
+      <header className="flex items-center justify-between gap-3 border-b border-outline-variant px-4 sm:px-8 py-3 bg-background sticky top-0 z-50">
         <div className="flex items-center gap-4">
           <Logo className="w-8 h-8" />
           <div>
@@ -415,7 +424,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
               KanoonScan
             </h2>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-on-surface-variant truncate max-w-xs">{document.name}</span>
+              <span className="text-xs text-on-surface-variant truncate max-w-[140px] sm:max-w-xs" title={document.name}>{document.name}</span>
               <span className="px-1.5 py-0.5 rounded bg-surface-container text-[9px] font-bold text-primary uppercase tracking-widest border border-primary/20">
                 Processed
               </span>
@@ -424,7 +433,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
         </div>
 
         {/* Centered Navigation */}
-        <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6">
+        <nav className="absolute left-1/2 -translate-x-1/2 hidden xl:flex items-center gap-6">
           <Link
             href="/dashboard"
             className="text-on-surface-variant hover:text-primary text-sm font-semibold transition-colors"
@@ -451,11 +460,11 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
             </button>
             <button
               onClick={handleExportReport}
-              className="flex items-center justify-center rounded-lg h-9 px-4 bg-primary-container text-white font-semibold text-sm hover:shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
+              className="flex items-center justify-center rounded-lg h-9 px-4 bg-primary-container text-[#452b00] font-semibold text-sm hover:shadow-[0_0_15px_rgba(245,166,35,0.35)] transition-all"
             >
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                Export Report
+                <span className="hidden sm:inline">Export Report</span>
               </span>
             </button>
             {/* Share toast */}
@@ -477,7 +486,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
 
       {/* Critical Risk Banner */}
       {highRiskCount > 0 && (
-        <div className="bg-error-container/10 border-b border-error-container/30 px-8 py-3 flex items-center justify-between">
+        <div className="bg-error-container/10 border-b border-error-container/30 px-4 sm:px-8 py-3 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-3 text-error">
             <span className="material-symbols-outlined fill-1">warning</span>
             <span className="text-sm font-semibold">
@@ -503,9 +512,9 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden min-h-0">
         {/* Document View */}
-        <section className="w-1/3 border-r border-outline-variant flex flex-col bg-surface-container-lowest/30">
+        <section className="w-full lg:w-1/3 max-h-[55vh] lg:max-h-none border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col bg-surface-container-lowest/30">
           <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
             <h3 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-data-label">
               Document Text
@@ -527,7 +536,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar leading-relaxed font-legal-text text-on-surface/90">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-8 custom-scrollbar leading-relaxed font-legal-text text-on-surface/90">
             <h1 className="text-xl font-bold mb-6 text-on-surface border-b border-outline-variant pb-4">{document.name}</h1>
             <div 
               className="whitespace-pre-wrap selection:bg-primary/20 transition-all duration-200"
@@ -539,13 +548,13 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
         </section>
 
         {/* Risk Overview */}
-        <section className="w-1/4 border-r border-outline-variant flex flex-col bg-surface-container-low/20">
+        <section className="w-full lg:w-1/4 border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col bg-surface-container-low/20 lg:overflow-y-auto custom-scrollbar">
           <div className="p-6">
             <h3 className="text-sm font-semibold mb-8 text-on-surface font-headline-md">Risk Profile</h3>
             <div className="relative size-44 mx-auto mb-10">
               <svg className="size-full" viewBox="0 0 100 100">
                 <circle
-                  className="stroke-[#2d3449]"
+                  className="stroke-[#393523]"
                   cx="50"
                   cy="50"
                   fill="transparent"
@@ -612,7 +621,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                         {category.level}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full bg-[#2d3449] rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-[#393523] rounded-full overflow-hidden">
                       <div 
                         style={{ width: `${category.score}%`, backgroundColor: catColor }}
                         className="h-full transition-all"
@@ -646,7 +655,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
         </section>
 
         {/* Clause Details */}
-        <section className="flex-1 flex flex-col bg-background overflow-hidden">
+        <section className="flex-1 flex flex-col bg-background lg:overflow-hidden min-w-0">
           <div className="p-4 border-b border-outline-variant flex flex-col gap-4 bg-surface-container-low/50">
             <div className="flex items-center justify-between">
               <div className="flex gap-4 overflow-x-auto no-scrollbar">
@@ -820,7 +829,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                         Original Text
                       </p>
                       <p className="text-sm text-on-surface-variant italic mb-4 border-l-2 border-outline-variant pl-3 leading-relaxed font-legal-text">
-                        "{clause.originalText}"
+                        &ldquo;{clause.originalText}&rdquo;
                       </p>
                     </div>
 
@@ -836,7 +845,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                     {clause.whyRisky && clause.whyRisky.trim() !== "" && (
                       <div>
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 font-data-label">
-                          Why it's risky
+                          Why it&apos;s risky
                         </p>
                         <p className="text-sm text-on-surface leading-relaxed">
                           {clause.whyRisky}
@@ -850,7 +859,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                           Ask for instead
                         </p>
                         <p className="text-sm italic text-on-surface-variant leading-relaxed">
-                          "{clause.suggestion}"
+                          &ldquo;{clause.suggestion}&rdquo;
                         </p>
                       </div>
                     )}
@@ -920,7 +929,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                         className={`text-xs font-semibold px-4 py-2 rounded-lg transition-all ${
                           acceptedClauses.has(clause.id || clause._id)
                             ? "bg-tertiary/20 text-tertiary cursor-default"
-                            : "bg-primary text-[#002a78] hover:shadow-[0_0_10px_rgba(180,197,255,0.3)]"
+                            : "bg-primary text-[#452b00] hover:opacity-90"
                         }`}
                       >
                         {acceptedClauses.has(clause.id || clause._id) ? "✓ Accepted" : "Accept Change"}
@@ -944,7 +953,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                       }`}
                     >
                       {msg.role === "ASSISTANT" && (
-                        <div className="size-6 rounded bg-primary-container flex items-center justify-center text-white shrink-0 mt-0.5">
+                        <div className="size-6 rounded bg-primary-container flex items-center justify-center text-[#452b00] shrink-0 mt-0.5">
                           <span className="material-symbols-outlined text-xs">smart_toy</span>
                         </div>
                       )}
@@ -961,7 +970,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                   ))}
                   {chatLoading && (
                     <div className="flex gap-2 items-center">
-                      <div className="size-6 rounded bg-primary-container flex items-center justify-center text-white shrink-0">
+                      <div className="size-6 rounded bg-primary-container flex items-center justify-center text-[#452b00] shrink-0">
                         <span className="material-symbols-outlined text-xs animate-spin">sync</span>
                       </div>
                       <span className="text-xs text-on-surface-variant">Thinking...</span>
@@ -970,7 +979,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                 </div>
               )}
               <div className="bg-surface-container border border-outline-variant p-2 rounded-xl flex items-center gap-4 shadow-xl">
-                <div className="size-10 rounded-lg bg-primary-container flex items-center justify-center text-white shrink-0">
+                <div className="size-10 rounded-lg bg-primary-container flex items-center justify-center text-[#452b00] shrink-0">
                   <span className="material-symbols-outlined">smart_toy</span>
                 </div>
                 <input
@@ -986,7 +995,7 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
                 <button
                   onClick={handleSendChat}
                   disabled={chatLoading || !chatInput.trim()}
-                  className="size-10 rounded-lg bg-primary text-[#002a78] flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="size-10 rounded-lg bg-primary text-[#452b00] flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-lg">send</span>
                 </button>
@@ -997,29 +1006,21 @@ export default function AnalysisReportClient({ analysisData }: { analysisData: A
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface-container border-t border-outline-variant px-8 py-2.5 flex items-center justify-between text-[10px] font-semibold text-on-surface-variant shrink-0 z-50 relative">
+      <footer className="bg-surface-container border-t border-outline-variant px-4 sm:px-8 py-2.5 flex items-center justify-between text-[10px] font-semibold text-on-surface-variant shrink-0 z-50 relative">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <div className="size-1.5 rounded-full bg-tertiary"></div>
             <span>Analysis Complete</span>
           </div>
-          <span>v4.2.1 Stable</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="#" className="hover:text-primary">
-            Legal Terms
-          </Link>
-          <Link href="#" className="hover:text-primary">
-            Contact Support
-          </Link>
-          <span>Last scanned: just now</span>
+          <span className="hidden sm:inline">AI-generated guidance — not legal advice</span>
+          <span>
+            Analysed{" "}
+            {new Date(analysisData.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
         </div>
       </footer>
     </div>
   );
-}
-
-// Stub saved state check
-function _clauseSavedState(clause: Clause) {
-  return clause.isSaved || false;
 }

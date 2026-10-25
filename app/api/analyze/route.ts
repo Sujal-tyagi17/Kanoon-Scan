@@ -1,46 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
 import { logAuditEvent } from "@/lib/db/audit";
 import { analyzeDocument } from "@/lib/groq/analyze";
-import { User, Document, Analysis, Clause, RiskCategory } from "@/types/db";
+import { Document, Analysis, Clause, RiskCategory } from "@/types/db";
 import { ObjectId } from "mongodb";
 
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
   
   try {
-    const user = await currentUser();
-    if (!user) {
+    const dbUser = await getOrCreateDbUser();
+    if (!dbUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     documentId = body.documentId;
 
-    if (!documentId) {
+    if (!documentId || !ObjectId.isValid(documentId)) {
+      documentId = undefined;
       return NextResponse.json(
-        { error: "Document ID is required" },
+        { error: "A valid document ID is required" },
         { status: 400 }
       );
     }
 
     const { db } = await connectToDatabase();
-    const users = db.collection<User>("users");
     const documents = db.collection<Document>("documents");
     const analyses = db.collection<Analysis>("analyses");
     const clauses = db.collection<Clause>("clauses");
     const riskCategories = db.collection<RiskCategory>("riskCategories");
-
-    const dbUser = await users.findOne({ clerkId: user.id });
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
 
     const document = await documents.findOne({ _id: new ObjectId(documentId) });
 

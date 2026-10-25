@@ -1,48 +1,41 @@
 "use client";
 
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import Link from "next/link";
+import { SignOutButton } from "@clerk/nextjs";
 
-export default function TopBar() {
-  const { user } = useUser();
-  const displayName = user?.firstName && user?.lastName
-    ? `${user.firstName} ${user.lastName}`
-    : user?.firstName || user?.username || "Legal Counsel";
+interface TopBarProps {
+  title?: string;
+  onMenuClick?: () => void;
+  showScanButton?: boolean;
+}
 
+export default function TopBar({ title, onMenuClick, showScanButton = true }: TopBarProps) {
   return (
-    <header className="h-16 border-b border-outline-variant bg-surface/70 backdrop-blur-md px-8 flex justify-between items-center sticky top-0 z-40">
-      {/* Title & Badge */}
-      <div className="flex items-center gap-2">
-        <h2 className="font-headline-md text-headline-md font-extrabold text-primary">KanoonScan</h2>
+    <header className="h-16 border-b border-outline-variant bg-surface/80 backdrop-blur-md px-4 sm:px-8 flex justify-between items-center sticky top-0 z-30 shrink-0">
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          className="lg:hidden p-2 -ml-2 rounded-lg text-on-surface-variant hover:bg-surface-variant focus-ring"
+          onClick={onMenuClick}
+          aria-label="Open menu"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        {title && <h1 className="font-display text-xl font-bold text-on-surface truncate">{title}</h1>}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-gutter">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">
-            search
-          </span>
-          <input
-            className="bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm w-72 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-on-surface"
-            placeholder="Search documents, clauses..."
-            type="text"
-          />
-        </div>
-
-        {/* Notifications & SignOut */}
-        <div className="flex items-center gap-stack-md">
-          <button className="p-2 text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-variant rounded-lg">
-            <span className="material-symbols-outlined">notifications</span>
+      <div className="flex items-center gap-3">
+        {showScanButton && (
+          <Link href="/scan" className="btn-primary !px-4 !py-2">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span className="hidden sm:inline">New Scan</span>
+          </Link>
+        )}
+        <SignOutButton redirectUrl="/">
+          <button className="btn-secondary !px-4 !py-2" aria-label="Log out">
+            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <span className="hidden sm:inline">Logout</span>
           </button>
-          <div className="h-8 w-px bg-outline-variant mx-2 hidden sm:block"></div>
-          <div className="hidden sm:flex items-center gap-3">
-            <SignOutButton redirectUrl="/">
-              <button className="bg-gradient-to-r from-primary-container to-primary px-4 py-2 text-xs font-label-caps text-[#452b00] font-bold rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all">
-                Logout
-              </button>
-            </SignOutButton>
-          </div>
-        </div>
+        </SignOutButton>
       </div>
     </header>
   );

@@ -1,9 +1,12 @@
 import Groq from "groq-sdk";
 import type { GeminiAnalysisResponse } from "@/types";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-});
+// Created lazily so a missing key doesn't crash `next build` / module import.
+let groqClient: Groq | null = null;
+function getGroq() {
+  if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return groqClient;
+}
 
 export async function analyzeDocument(
   documentText: string
@@ -12,7 +15,7 @@ export async function analyzeDocument(
   let useGeminiFallback = false;
 
   try {
-    chatCompletion = await groq.chat.completions.create({
+    chatCompletion = await getGroq().chat.completions.create({
       messages: [
         {
           role: "user",
@@ -31,7 +34,7 @@ export async function analyzeDocument(
     if (isRateLimit) {
       console.warn("Llama-3.3 rate limit hit. Trying fallback model llama-3.1-8b-instant...");
       try {
-        chatCompletion = await groq.chat.completions.create({
+        chatCompletion = await getGroq().chat.completions.create({
           messages: [
             {
               role: "user",
@@ -46,7 +49,7 @@ export async function analyzeDocument(
       } catch (fallbackError) {
         console.warn("Error with fallback model llama-3.1-8b-instant. Trying mixtral-8x7b-32768...");
         try {
-          chatCompletion = await groq.chat.completions.create({
+          chatCompletion = await getGroq().chat.completions.create({
             messages: [
               {
                 role: "user",

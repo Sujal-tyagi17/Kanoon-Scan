@@ -7,6 +7,7 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
+    './lib/**/*.{ts,tsx}',
 	],
   prefix: "",
   theme: {
@@ -19,15 +20,20 @@ const config = {
     },
     extend: {
       fontFamily: {
-        "body-lg": ["Inter", "sans-serif"],
-        "display-lg": ["Playfair Display", "serif"],
-        "data-mono": ["JetBrains Mono", "monospace"],
-        "label-caps": ["JetBrains Mono", "monospace"],
-        "body-sm": ["Inter", "sans-serif"],
-        "headline-lg": ["Playfair Display", "serif"],
-        "body-md": ["Inter", "sans-serif"],
-        "headline-lg-mobile": ["Playfair Display", "serif"],
-        "headline-md": ["Playfair Display", "serif"]
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-source-serif)", "Georgia", "serif"],
+        "display-lg": ["var(--font-source-serif)", "Georgia", "serif"],
+        "headline-xl": ["var(--font-source-serif)", "Georgia", "serif"],
+        "headline-lg": ["var(--font-source-serif)", "Georgia", "serif"],
+        "headline-lg-mobile": ["var(--font-source-serif)", "Georgia", "serif"],
+        "headline-md": ["var(--font-source-serif)", "Georgia", "serif"],
+        "body-lg": ["var(--font-inter)", "Inter", "sans-serif"],
+        "body-md": ["var(--font-inter)", "Inter", "sans-serif"],
+        "body-sm": ["var(--font-inter)", "Inter", "sans-serif"],
+        "button-label": ["var(--font-inter)", "Inter", "sans-serif"],
+        "data-mono": ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+        "data-label": ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+        "label-caps": ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
       },
       colors: {
         primary: {
@@ -143,7 +149,8 @@ const config = {
         "headline-lg": ["48px", { "lineHeight": "56px", "fontWeight": "700" }],
         "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
         "headline-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
-        "headline-md": ["32px", { "lineHeight": "40px", "fontWeight": "600" }]
+        "headline-md": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+        "headline-xl": ["clamp(28px, 4vw, 40px)", { "lineHeight": "1.15", "fontWeight": "700" }]
       },
       keyframes: {
         "accordion-down": {

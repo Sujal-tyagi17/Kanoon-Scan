@@ -1,382 +1,282 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Logo from "@/components/Logo";
 import ShaderBackground from "@/components/ShaderBackground";
 import Doc3DAnimation from "@/components/Doc3DAnimation";
 
+const FEATURES = [
+  {
+    icon: "gpp_maybe",
+    title: "Risk detection",
+    body: "Every clause is rated low to critical, with a 0–100 score for the whole document so you know where to look first.",
+  },
+  {
+    icon: "translate",
+    title: "Plain-English summaries",
+    body: "Dense legalese rewritten into short, readable explanations — what the clause says and what it means for you.",
+  },
+  {
+    icon: "balance",
+    title: "Who benefits, who's at risk",
+    body: "See which party each clause favours, why it might be risky, and a suggested fix you can take to the other side.",
+  },
+  {
+    icon: "database",
+    title: "Key details extracted",
+    body: "Parties, dates, payment terms, notice periods and governing law pulled out into one structured summary.",
+  },
+  {
+    icon: "forum",
+    title: "Ask questions",
+    body: "Chat with your document: “Can I terminate early?” “What happens if I pay late?” — answered from the contract text.",
+  },
+  {
+    icon: "picture_as_pdf",
+    title: "Exportable reports",
+    body: "Download a clean, print-friendly report to share with a colleague or your lawyer.",
+  },
+];
+
+const STEPS = [
+  { icon: "upload_file", title: "Upload", body: "Drop in a PDF, DOCX or TXT file — or paste the text directly." },
+  { icon: "psychology", title: "Analyse", body: "The AI reads every clause, flags risks and extracts the key terms." },
+  { icon: "verified", title: "Decide", body: "Review the risk score, summary and suggested changes before you sign." },
+];
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary/30 selection:text-on-primary">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/30 px-6 sm:px-12">
+    <div className="min-h-screen bg-background text-on-surface selection:bg-primary/30">
+      {/* Nav */}
+      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/30 px-4 sm:px-12">
         <div className="flex justify-between items-center max-w-7xl mx-auto h-16 w-full">
-          <div className="flex items-center gap-3">
-            <Logo className="w-10 h-10" />
-            <span className="text-xl font-display-lg text-headline-md bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">KanoonScan</span>
-          </div>
+          <Link href="/" className="flex items-center gap-3">
+            <Logo className="w-9 h-9" />
+            <span className="text-xl font-display font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              KanoonScan
+            </span>
+          </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-12">
-            <a className="text-on-surface-variant font-medium font-label-caps tracking-widest hover:text-primary transition-colors text-sm" href="/#how-it-works">
-              How It Works
+          <div className="hidden md:flex items-center gap-10">
+            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors text-sm" href="#how-it-works">
+              How it works
             </a>
-            <a className="text-on-surface-variant font-medium font-label-caps tracking-widest hover:text-primary transition-colors text-sm" href="/#features">
+            <a className="text-on-surface-variant font-medium hover:text-primary transition-colors text-sm" href="#features">
               Features
             </a>
-            <SignedIn>
-              <Link className="text-on-surface-variant font-medium font-label-caps tracking-widest hover:text-primary transition-colors text-sm" href="/dashboard">
-                Dashboard
-              </Link>
-              <Link className="text-on-surface-variant font-medium font-label-caps tracking-widest hover:text-primary transition-colors text-sm" href="/vault">
-                Document Vault
-              </Link>
-            </SignedIn>
           </div>
 
-          {/* Auth Actions */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
             <SignedIn>
-              <Link className="text-on-surface-variant font-medium font-label-caps tracking-widest hover:text-primary transition-colors text-sm mr-2" href="/dashboard">
+              <Link href="/dashboard" className="btn-primary !py-2">
                 Dashboard
               </Link>
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "size-8 rounded-full border border-primary/20",
-                  },
-                }}
-              />
+              <UserButton appearance={{ elements: { avatarBox: "size-8 rounded-full border border-primary/20" } }} />
             </SignedIn>
             <SignedOut>
-              <Link href="/sign-in">
-                <button className="bg-gradient-to-r from-primary-container to-primary px-6 py-2 text-sm font-label-caps text-[#452b00] font-bold rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all">
-                  Login
-                </button>
+              <Link href="/sign-in" className="text-sm font-semibold text-on-surface-variant hover:text-primary px-3 py-2 rounded-lg focus-ring">
+                Log in
+              </Link>
+              <Link href="/sign-up" className="btn-primary !py-2">
+                Get started
               </Link>
             </SignedOut>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen pt-24 overflow-hidden flex flex-col items-center justify-center">
+      {/* Hero */}
+      <section className="relative min-h-[100svh] pt-24 pb-12 overflow-hidden flex flex-col items-center justify-center">
         <ShaderBackground />
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-12 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center w-full">
           <div className="space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center px-4 py-1.5 border border-primary/30 rounded-full mb-md max-w-fit bg-surface-container-lowest">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse mr-2"></span>
-              <span className="font-data-mono text-label-caps text-primary uppercase tracking-[0.2em] text-xs">Legal AI</span>
+            <div className="inline-flex items-center px-4 py-1.5 border border-primary/30 rounded-full bg-surface-container-lowest/80">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse mr-2" />
+              <span className="font-data-mono text-primary uppercase tracking-[0.2em] text-xs">AI contract analysis</span>
             </div>
-            <h1 className="font-display-lg text-[72px] leading-[1.1] mb-md text-on-surface">
-              Scan. Analyze. <br/>
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Understand.</span>
+            <h1 className="font-display font-bold text-5xl sm:text-6xl xl:text-7xl leading-[1.05] text-on-surface">
+              Know before <br className="hidden sm:block" />
+              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">you sign.</span>
             </h1>
-            <p className="font-body-lg text-on-surface-variant mb-xl max-w-lg mx-auto lg:mx-0">
-              AI-powered legal document analysis in seconds. Uncover hidden risks, extract key clauses, and master your case files with the prestige of a digital elite counsel.
+            <p className="text-lg text-on-surface-variant max-w-lg mx-auto lg:mx-0">
+              Upload a rental agreement, offer letter or NDA. KanoonScan flags risky clauses, explains them in plain
+              English and tells you what to ask for — in about a minute.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
-              <Link href="/sign-up">
-                <button className="bg-gradient-to-r from-primary-container to-primary px-8 py-3.5 text-sm font-label-caps text-[#452b00] font-bold rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all shadow-xl">
-                  Analyze Now
-                </button>
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center lg:justify-start">
+              <SignedOut>
+                <Link href="/sign-up" className="btn-primary !px-8 !py-3.5 text-base">
+                  Analyse a document free
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </Link>
+                <a href="#how-it-works" className="btn-secondary !px-8 !py-3.5 text-base">
+                  See how it works
+                </a>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/scan" className="btn-primary !px-8 !py-3.5 text-base">
+                  Scan a document
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </Link>
+                <Link href="/dashboard" className="btn-secondary !px-8 !py-3.5 text-base">
+                  Go to dashboard
+                </Link>
+              </SignedIn>
             </div>
           </div>
 
-          {/* 3D Visual Mesh container */}
-          <div className="relative h-[350px] sm:h-[450px] lg:h-[550px] flex items-center justify-center">
+          <div className="relative h-[300px] sm:h-[420px] lg:h-[540px] flex items-center justify-center">
             <Doc3DAnimation className="w-full h-full" />
-            {/* Glowing orbs background */}
-            <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
-            <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-tertiary/5 blur-[120px] rounded-full pointer-events-none"></div>
+            <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
           </div>
         </div>
       </section>
 
-      {/* Trust compliance strip */}
-      <section className="py-12 bg-surface-container-lowest border-y border-outline-variant/30">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center items-center gap-8 md:gap-12 opacity-80">
-          <div className="flex items-center gap-3 bg-surface-container/30 backdrop-blur-sm p-4 rounded-xl border border-outline-variant/25">
-            <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-            <span className="font-semibold text-on-surface text-sm">256-bit Encryption</span>
-          </div>
-          <div className="flex items-center gap-3 bg-surface-container/30 backdrop-blur-sm p-4 rounded-xl border border-outline-variant/25">
-            <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
-            <span className="font-semibold text-on-surface text-sm">GDPR Compliant</span>
-          </div>
-          <div className="flex items-center gap-3 bg-surface-container/30 backdrop-blur-sm p-4 rounded-xl border border-outline-variant/25">
-            <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
-            <span className="font-semibold text-on-surface text-sm">SOC 2 Type II Certified</span>
-          </div>
+      {/* Trust strip */}
+      <section className="py-8 bg-surface-container-lowest border-y border-outline-variant/30">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center items-center gap-4 sm:gap-8">
+          {[
+            { icon: "encrypted", text: "Document text encrypted at rest (AES-256)" },
+            { icon: "delete_forever", text: "Delete your data any time" },
+            { icon: "description", text: "PDF, DOCX & TXT supported" },
+          ].map((t) => (
+            <div key={t.icon} className="flex items-center gap-3 px-4 py-2">
+              <span className="material-symbols-outlined text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {t.icon}
+              </span>
+              <span className="font-medium text-on-surface text-sm">{t.text}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="font-headline-lg text-4xl sm:text-5xl lg:text-6xl font-bold text-primary mb-sm">Unrivaled Legal Precision</h2>
-          <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Card 1 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">document_scanner</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">Document Vault</h3>
-            <p className="font-body-md text-on-surface-variant">Securely store and organize thousands of case files with military-grade encryption and instant retrieval.</p>
+      {/* How it works */}
+      <section id="how-it-works" className="py-20 sm:py-24 scroll-mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14 space-y-3">
+            <h2 className="font-display text-4xl sm:text-5xl font-bold">How it works</h2>
+            <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto" />
           </div>
-          {/* Card 2 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">psychology</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">AI Analysis</h3>
-            <p className="font-body-md text-on-surface-variant">Our proprietary LLM cross-references jurisdictional precedents and highlights critical contractual obligations in milliseconds.</p>
-          </div>
-          {/* Card 3 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">gpp_maybe</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">Risk Detection</h3>
-            <p className="font-body-md text-on-surface-variant">Automatically identify non-compliant clauses and potential liability triggers before they become legal liabilities.</p>
-          </div>
-          {/* Card 4 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">database</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">Metadata Extraction</h3>
-            <p className="font-body-md text-on-surface-variant">Automatically extract dates, party names, financial commitments, and key deliverables into structured summaries.</p>
-          </div>
-          {/* Card 5 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">encrypted</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">Secure Vault</h3>
-            <p className="font-body-md text-on-surface-variant">Institutional-grade document repository with AES-256 zero-knowledge encryption for complete privacy assurance.</p>
-          </div>
-          {/* Card 6 */}
-          <div className="hairline-gold p-xl glass-vault group hover:border-primary/60 transition-all duration-500 rounded-lg">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-2xl">summarize</span>
-            </div>
-            <h3 className="font-headline-md text-on-surface mb-sm">Translations</h3>
-            <p className="font-body-md text-on-surface-variant">Instantly translate complex legalese jargon into clean, plain English summaries to save hours of reviewing.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works Section */}
-      <section id="how-it-works" className="py-24 bg-background relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-24">
-            <h2 className="font-headline-lg text-4xl sm:text-5xl lg:text-6xl font-bold text-center mb-2">The Verdict Journey</h2>
-            <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-            <div className="hidden md:block absolute top-12 left-0 w-full h-[2px] step-connector -z-10 opacity-20"></div>
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="font-display-lg text-[80px] text-primary/10 leading-none mb-[-20px]">01</div>
-              <div className="w-16 h-16 rounded-full border border-primary flex items-center justify-center bg-background mb-md text-primary">
-                <span className="material-symbols-outlined">upload_file</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 relative">
+            <div className="hidden md:block absolute top-8 left-[16%] right-[16%] h-px step-connector opacity-30" />
+            {STEPS.map((step, i) => (
+              <div key={step.title} className="relative flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full border border-primary flex items-center justify-center bg-background mb-4 text-primary relative">
+                  <span className="material-symbols-outlined">{step.icon}</span>
+                  <span className="absolute -top-2 -right-2 size-6 rounded-full bg-primary text-[#452b00] text-xs font-bold flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                </div>
+                <h3 className="font-display text-2xl font-semibold mb-2">{step.title}</h3>
+                <p className="text-sm text-on-surface-variant max-w-xs">{step.body}</p>
               </div>
-              <h4 className="font-headline-md text-on-surface mb-sm">Ingest</h4>
-              <p className="font-body-sm text-on-surface-variant max-w-xs">Upload raw PDFs, scans, or images. Our OCR preserves legal formatting perfectly.</p>
-            </div>
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="font-display-lg text-[80px] text-primary/10 leading-none mb-[-20px]">02</div>
-              <div className="w-16 h-16 rounded-full border border-primary flex items-center justify-center bg-background mb-md text-primary">
-                <span className="material-symbols-outlined">analytics</span>
-              </div>
-              <h4 className="font-headline-md text-on-surface mb-sm">Deep Scan</h4>
-              <p className="font-body-sm text-on-surface-variant max-w-xs">AI neurons parse every sentence against 50+ global legal databases.</p>
-            </div>
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="font-display-lg text-[80px] text-primary/10 leading-none mb-[-20px]">03</div>
-              <div className="w-16 h-16 rounded-full border border-primary flex items-center justify-center bg-background mb-md text-primary">
-                <span className="material-symbols-outlined">verified</span>
-              </div>
-              <h4 className="font-headline-md text-on-surface mb-sm">Verdict</h4>
-              <p className="font-body-sm text-on-surface-variant max-w-xs">Receive a comprehensive summary, risk score, and suggested amendments.</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Stats strip */}
-      <section className="w-full bg-surface-container-high py-lg hairline-gold border-x-0">
-        <div className="max-w-7xl mx-auto px-xl flex flex-wrap justify-between items-center gap-lg">
-          <div className="flex flex-col">
-            <span className="font-headline-md text-primary">10,000+</span>
-            <span className="font-label-caps text-on-surface-variant">Files Processed</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-md text-primary">99.2%</span>
-            <span className="font-label-caps text-on-surface-variant">Accuracy Rate</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-md text-primary">&lt; 30 sec</span>
-            <span className="font-label-caps text-on-surface-variant">Avg Analysis Time</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-md text-primary">50+</span>
-            <span className="font-label-caps text-on-surface-variant">Jurisdictions</span>
-          </div>
+      {/* Features */}
+      <section id="features" className="py-20 sm:py-24 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-16">
+        <div className="text-center mb-14 space-y-3">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold text-primary">What you get</h2>
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="hairline-gold glass-vault p-7 rounded-xl group hover:border-primary/60 transition-colors duration-300">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-5 text-primary group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl">{f.icon}</span>
+              </div>
+              <h3 className="font-display text-2xl font-semibold text-on-surface mb-2">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-on-surface-variant">{f.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Vault Preview Section */}
-      <section className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <div className="lg:col-span-4 space-y-6">
-            <h2 className="font-headline-lg text-4xl sm:text-5xl font-bold text-on-surface">Master the Vault</h2>
-            <p className="font-body-md text-on-surface-variant">
-              A workspace designed for precision. Every file is a piece of intelligence, organized with the meticulous care of an archival specialist.
+      {/* Product preview */}
+      <section className="py-20 sm:py-24 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-4 space-y-5">
+            <h2 className="font-display text-4xl sm:text-5xl font-bold text-on-surface">One report, everything that matters</h2>
+            <p className="text-on-surface-variant">
+              The document on one side, the risks on the other. Save the clauses you care about, ask follow-up
+              questions, and export when you&apos;re done.
             </p>
-            <ul className="space-y-md">
-              <li className="flex items-center gap-sm">
-                <span className="material-symbols-outlined text-primary">check_circle</span>
-                <span className="font-body-sm text-on-surface">Auto-tagging & Categorization</span>
-              </li>
-              <li className="flex items-center gap-sm">
-                <span className="material-symbols-outlined text-primary">check_circle</span>
-                <span className="font-body-sm text-on-surface">Multi-party collaboration</span>
-              </li>
-              <li className="flex items-center gap-sm">
-                <span className="material-symbols-outlined text-primary">check_circle</span>
-                <span className="font-body-sm text-on-surface">History Tracking & Diff Checks</span>
-              </li>
+            <ul className="space-y-3">
+              {["Risk score & category breakdown", "Clause-by-clause explanations", "Saved clauses & document vault"].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">check_circle</span>
+                  <span className="text-sm text-on-surface">{t}</span>
+                </li>
+              ))}
             </ul>
           </div>
           <div className="lg:col-span-8">
-            <div className="hairline-gold rounded-xl overflow-hidden glass-vault shadow-2xl p-sm">
-              {/* Dashboard UI Mockup */}
-              <div className="bg-surface-container-lowest h-[450px] rounded-lg overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between p-md border-b border-outline-variant/20">
-                  <div className="flex items-center gap-md">
-                    <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
-                  </div>
-                  <div className="bg-surface-variant/30 px-md py-1 rounded text-label-caps text-xs opacity-60">vault.kanoonscan.com</div>
-                  <div className="w-10"></div>
-                </div>
-                <div className="flex-1 flex">
-                  <div className="w-48 border-r border-outline-variant/20 p-md flex flex-col gap-sm">
-                    <div className="h-6 w-full bg-primary/10 rounded"></div>
-                    <div className="h-6 w-3/4 bg-on-surface-variant/5 rounded"></div>
-                    <div className="h-6 w-5/6 bg-on-surface-variant/5 rounded"></div>
-                    <div className="mt-auto h-12 w-full border border-primary/20 rounded-md"></div>
-                  </div>
-                  <div className="flex-1 p-xl">
-                    <div className="grid grid-cols-2 gap-lg h-full">
-                      <div className="space-y-lg">
-                        <div className="h-32 w-full bg-primary/5 border border-primary/10 rounded-xl p-md">
-                          <div className="flex justify-between">
-                            <div className="h-4 w-1/3 bg-primary/30 rounded"></div>
-                            <div className="h-4 w-4 bg-primary/30 rounded-full"></div>
-                          </div>
-                          <div className="mt-md space-y-2">
-                            <div className="h-2 w-full bg-on-surface/5 rounded"></div>
-                            <div className="h-2 w-5/6 bg-on-surface/5 rounded"></div>
-                            <div className="h-2 w-2/3 bg-on-surface/5 rounded"></div>
-                          </div>
-                        </div>
-                        <div className="h-48 w-full bg-surface-container-high rounded-xl border border-outline-variant/20"></div>
-                      </div>
-                      <div className="bg-surface-container-highest/40 rounded-xl border border-primary/20 flex flex-col p-md">
-                        <div className="h-4 w-1/2 bg-primary/40 rounded mb-md"></div>
-                        <div className="flex-1 space-y-sm">
-                          <div className="h-2 w-full bg-primary/10 rounded"></div>
-                          <div className="h-2 w-full bg-primary/10 rounded"></div>
-                          <div className="h-2 w-full bg-primary/10 rounded"></div>
-                          <div className="h-2 w-2/3 bg-primary/10 rounded"></div>
-                        </div>
-                        <div className="h-10 w-full bg-primary rounded mt-md"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="hairline-gold rounded-xl overflow-hidden shadow-2xl bg-surface-container-lowest">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-outline-variant/30">
+                <span className="w-3 h-3 rounded-full bg-red-500/50" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                <span className="w-3 h-3 rounded-full bg-green-500/50" />
               </div>
+              <Image
+                src="/screenshots/analysis.png"
+                alt="KanoonScan analysis report showing a contract, its risk score and flagged clauses"
+                width={1892}
+                height={861}
+                className="w-full h-auto"
+                sizes="(min-width: 1024px) 66vw, 100vw"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 -z-10 blur-[120px]"></div>
-        <div className="max-w-container-max mx-auto px-xl text-center">
-          <h2 className="font-display-lg text-headline-lg-mobile md:text-display-lg mb-xl max-w-3xl mx-auto">
-            Ready to <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">master your legal documents?</span>
+      {/* CTA */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5 -z-10 blur-[120px]" />
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="font-display font-bold text-4xl sm:text-5xl mb-5">
+            Read the fine print <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">without the headache.</span>
           </h2>
-          <p className="font-body-lg text-on-surface-variant mb-xl max-w-xl mx-auto">
-            Join the elite firms using KanoonScan to accelerate analysis and minimize risk.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-md justify-center items-center">
-            <Link href="/sign-up" className="w-full sm:w-auto">
-              <button className="bg-gradient-to-r from-primary-container to-primary px-8 py-3.5 text-sm font-label-caps text-[#452b00] font-bold rounded-DEFAULT hover:opacity-90 active:scale-95 transition-all shadow-xl">
-                Start Your Free Analysis
-              </button>
-            </Link>
-          </div>
+          <p className="text-lg text-on-surface-variant mb-8">Free to use. Your first report takes about a minute.</p>
+          <SignedOut>
+            <Link href="/sign-up" className="btn-primary !px-8 !py-3.5 text-base">Start your free analysis</Link>
+          </SignedOut>
+          <SignedIn>
+            <Link href="/scan" className="btn-primary !px-8 !py-3.5 text-base">Scan a document</Link>
+          </SignedIn>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-surface-container-lowest pt-xl border-t border-primary/20">
-        <div className="max-w-container-max mx-auto px-xl">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-xl pb-xl">
-            <div className="space-y-md max-w-xs">
-              <div className="flex items-center gap-sm">
-                <Logo className="w-10 h-10" />
-                <span className="font-display-lg text-headline-md text-primary">KanoonScan</span>
-              </div>
-              <p className="font-body-sm text-on-surface-variant">
-                The ultimate confluence of legal authority and artificial intelligence. Built for those who settle for nothing less than the golden verdict.
-              </p>
+      <footer className="bg-surface-container-lowest border-t border-primary/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col md:flex-row justify-between gap-8">
+          <div className="space-y-3 max-w-sm">
+            <div className="flex items-center gap-2">
+              <Logo className="w-9 h-9" />
+              <span className="font-display text-2xl font-bold text-primary">KanoonScan</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-xl">
-              <div className="space-y-sm">
-                <span className="font-label-caps text-primary text-xs uppercase tracking-widest">Platform</span>
-                <nav className="flex flex-col gap-2">
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Features</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Security</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Case Studies</a>
-                </nav>
-              </div>
-              <div className="space-y-sm">
-                <span className="font-label-caps text-primary text-xs uppercase tracking-widest">Company</span>
-                <nav className="flex flex-col gap-2">
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">About Us</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Careers</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Contact</a>
-                </nav>
-              </div>
-              <div className="space-y-sm">
-                <span className="font-label-caps text-primary text-xs uppercase tracking-widest">Legal</span>
-                <nav className="flex flex-col gap-2">
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Privacy</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">Terms</a>
-                  <a className="font-body-sm text-on-surface-variant hover:text-primary transition-colors text-sm" href="#">GDPR</a>
-                </nav>
-              </div>
-            </div>
+            <p className="text-sm text-on-surface-variant">
+              AI-powered contract analysis. KanoonScan is an informational tool and does not provide legal advice.
+            </p>
           </div>
-          <div className="py-lg border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-md">
-            <p className="font-body-sm text-on-secondary-fixed-variant text-xs">© 2026 KanoonScan. All rights reserved.</p>
-            <div className="flex gap-lg">
-              <span className="font-data-mono text-[10px] text-on-surface-variant/40">LATENCY: 14MS</span>
-              <span className="font-data-mono text-[10px] text-on-surface-variant/40">SYSTEM STATUS: NOMINAL</span>
-              <span className="font-data-mono text-[10px] text-on-surface-variant/40">V.2.4.1</span>
+          <nav className="flex gap-10 text-sm">
+            <div className="flex flex-col gap-2">
+              <span className="font-label-caps text-primary text-xs uppercase tracking-widest mb-1">Product</span>
+              <a className="text-on-surface-variant hover:text-primary" href="#features">Features</a>
+              <a className="text-on-surface-variant hover:text-primary" href="#how-it-works">How it works</a>
             </div>
-          </div>
+            <div className="flex flex-col gap-2">
+              <span className="font-label-caps text-primary text-xs uppercase tracking-widest mb-1">Account</span>
+              <Link className="text-on-surface-variant hover:text-primary" href="/sign-in">Log in</Link>
+              <Link className="text-on-surface-variant hover:text-primary" href="/sign-up">Sign up</Link>
+            </div>
+          </nav>
+        </div>
+        <div className="border-t border-outline-variant/20 py-5 text-center text-xs text-outline">
+          © {new Date().getFullYear()} KanoonScan · Built by Sujal Tyagi
         </div>
       </footer>
     </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { encryptText } from "@/lib/encryption";
 import { logAuditEvent } from "@/lib/db/audit";
@@ -59,11 +59,10 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
 
 export async function POST(req: NextRequest) {
   let documentId: string | undefined;
-  let userObjectId: string | undefined;
-  
+
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const user = await getOrCreateDbUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -79,21 +78,35 @@ export async function POST(req: NextRequest) {
     }
 
     const fileName = file.name;
-    const fileType = file.type;
+    const fileType = file.type || "";
+    const lowerName = fileName.toLowerCase();
+
+    if (file.size > 16 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File is too large. Maximum size is 16MB." },
+        { status: 413 }
+      );
+    }
+
+    const isPdf = fileType === "application/pdf" || lowerName.endsWith(".pdf");
+    const isDocx =
+      fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      lowerName.endsWith(".docx");
+    const isTxt = fileType.startsWith("text/") || lowerName.endsWith(".txt");
+
+    if (!isPdf && !isDocx && !isTxt) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Please upload a PDF, DOCX or TXT file." },
+        { status: 415 }
+      );
+    }
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const { db } = await connectToDatabase();
-    const users = db.collection<User>("users");
     const documents = db.collection<Document>("documents");
 
-    // Get user from database
-    const user = await users.findOne({ clerkId: userId });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-    
-    userObjectId = user._id!.toString();
+    const userObjectId = user._id.toString();
 
     // Create document record with PROCESSING status directly since upload is skipped
     const documentResult = await documents.insertOne({
@@ -111,22 +124,18 @@ export async function POST(req: NextRequest) {
     // Extract text based on file type
     let extractedText = "";
     try {
-      if (fileType === "application/pdf" || fileName.endsWith(".pdf")) {
+      if (isPdf) {
         extractedText = await extractTextFromPDF(buffer);
-      } else if (
-        fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        fileName.endsWith(".docx") ||
-        fileName.endsWith(".doc")
-      ) {
+      } else if (isDocx) {
         extractedText = await extractTextFromDOCX(buffer);
-      } else if (fileType.startsWith("text/") || fileName.endsWith(".txt")) {
-        extractedText = buffer.toString("utf-8");
       } else {
-        throw new Error("Unsupported file type");
+        extractedText = buffer.toString("utf-8");
       }
 
       if (!extractedText.trim()) {
-        throw new Error("Extracted text is empty");
+        throw new Error(
+          "We couldn't find any text in this file. If it's a scanned PDF, try pasting the text instead."
+        );
       }
 
       // Encrypt the extracted text for secure zero-knowledge storage

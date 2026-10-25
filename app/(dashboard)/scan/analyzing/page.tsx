@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
 
@@ -23,7 +23,7 @@ function getRandomLegalTip() {
   return LEGAL_TIPS[Math.floor(Math.random() * LEGAL_TIPS.length)];
 }
 
-export default function AnalyzingPage() {
+function AnalyzingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId");
@@ -33,57 +33,66 @@ export default function AnalyzingPage() {
   const [error, setError] = useState<string | null>(null);
   const [legalTip] = useState(() => getRandomLegalTip());
 
-  useEffect(() => {
-    if (!documentId) {
-      router.push("/scan");
-      return;
-    }
+  const startedRef = useRef(false);
+  const [attempt, setAttempt] = useState(0);
 
-    // Simulate progress for steps 1-2 (upload and text extraction are already done)
+  const runAnalysis = useCallback(async () => {
+    if (!documentId) return;
+    setError(null);
     setProgress(30);
     setCurrentStep(2);
 
-    const timer1 = setTimeout(() => {
-      setProgress(60);
+    // Smoothly creep the bar while the model works, without ever claiming 100%.
+    const creep = setInterval(() => {
+      setProgress((p) => (p < 90 ? p + Math.max(0.5, (90 - p) / 25) : p));
       setCurrentStep(3);
-    }, 1000);
+    }, 400);
 
-    // Start actual analysis
-    const analyzeDocument = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for UI to show progress
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId }),
+      });
+      const data = await response.json().catch(() => ({}));
 
-        const response = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Analysis failed");
-        }
-
-        const { analysisId } = await response.json();
-
-        // Animate to 100%
-        setProgress(100);
-
-        // Redirect directly to the analysis report after a brief moment
-        setTimeout(() => {
-          router.push(`/analysis/${analysisId}`);
-        }, 1000);
-      } catch (err) {
-        console.error("Analysis error:", err);
-        setError("Failed to analyze document. Please try again.");
+      if (response.status === 401) {
+        router.push(`/sign-in?redirect_url=${encodeURIComponent(`/scan/analyzing?documentId=${documentId}`)}`);
+        return;
       }
-    };
+      if (!response.ok || !data.analysisId) {
+        throw new Error(
+          response.status === 404
+            ? "We couldn't find this document. It may have been deleted."
+            : data.error || "Analysis failed"
+        );
+      }
 
-    analyzeDocument();
-
-    return () => {
-      clearTimeout(timer1);
-    };
+      setProgress(100);
+      setCurrentStep(4);
+      setTimeout(() => router.replace(`/analysis/${data.analysisId}`), 600);
+    } catch (err: any) {
+      console.error("Analysis error:", err);
+      setError(
+        err?.message && err.message !== "Analysis failed"
+          ? err.message
+          : "The AI couldn't finish analysing this document. This is usually temporary — please try again."
+      );
+    } finally {
+      clearInterval(creep);
+    }
   }, [documentId, router]);
+
+  useEffect(() => {
+    if (!documentId) {
+      router.replace("/scan");
+      return;
+    }
+    // Guard against React strict-mode double invocation firing two analyses.
+    if (startedRef.current && attempt === 0) return;
+    startedRef.current = true;
+    runAnalysis();
+  }, [documentId, router, runAnalysis, attempt]);
 
   const stepConfig = [
     { label: "Document Uploaded", doneLabel: "Document Uploaded", icon: "cloud_done" },
@@ -160,9 +169,13 @@ export default function AnalyzingPage() {
           <div className="w-full max-w-md mb-4 p-4 bg-error/10 border border-error/20 rounded-xl text-error text-sm text-center shrink-0">
             <span className="material-symbols-outlined text-base mr-2 align-middle">error</span>
             {error}
-            <Link href="/scan" className="block mt-2 text-primary underline text-xs">
-              Go back to scan
-            </Link>
+            <div className="flex justify-center gap-3 mt-3">
+              <button onClick={() => setAttempt((a) => a + 1)} className="btn-primary !py-2">
+                <span className="material-symbols-outlined text-[18px]">refresh</span>
+                Try again
+              </button>
+              <Link href="/scan" className="btn-secondary !py-2">Scan another</Link>
+            </div>
           </div>
         )}
 
@@ -255,5 +268,13 @@ export default function AnalyzingPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AnalyzingPage() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-background" />}>
+      <AnalyzingContent />
+    </Suspense>
   );
 }

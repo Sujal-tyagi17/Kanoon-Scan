@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { decryptText } from "@/lib/encryption";
 import { chatWithDocument } from "@/lib/gemini/chat";
-import { User, Analysis, Document, Clause, Chat } from "@/types/db";
+import { Analysis, Document, Clause, Chat } from "@/types/db";
 import { ObjectId } from "mongodb";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const dbUser = await getOrCreateDbUser();
+    if (!dbUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { analysisId, message } = await req.json();
 
-    if (!analysisId || !message) {
+    if (!analysisId || !ObjectId.isValid(analysisId) || !message || typeof message !== "string") {
       return NextResponse.json(
         { error: "Analysis ID and message are required" },
         { status: 400 }
@@ -23,17 +23,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { db } = await connectToDatabase();
-    const users = db.collection<User>("users");
     const analyses = db.collection<Analysis>("analyses");
     const documents = db.collection<Document>("documents");
     const clausesCol = db.collection<Clause>("clauses");
     const chatsCol = db.collection<Chat>("chats");
 
-    // Get user
-    const dbUser = await users.findOne({ clerkId: userId });
-    if (!dbUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Get analysis
     const analysis = await analyses.findOne({ _id: new ObjectId(analysisId) });

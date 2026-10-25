@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getOrCreateDbUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { encryptText } from "@/lib/encryption";
 import { logAuditEvent } from "@/lib/db/audit";
-import { User, Document } from "@/types/db";
+import { Document } from "@/types/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const user = await getOrCreateDbUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,15 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { db } = await connectToDatabase();
-    const users = db.collection<User>("users");
     const documents = db.collection<Document>("documents");
-
-    // Find user by clerkId
-    const user = await users.findOne({ clerkId: userId });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Encrypt the document content before storing it in MongoDB
     const encryptedText = encryptText(rawText);
